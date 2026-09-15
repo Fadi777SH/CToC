@@ -5,20 +5,70 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CToC"
         mc:Ignorable="d"
-        Title="MainWindow"  Height="300" Width="400" Background="White">
+        Title="MainWindow" ResizeMode="NoResize" Height="300" Width="450" Background="White">
+    <Window.Resources>
+        <Style TargetType="ToggleButton" x:Key="ToggelBtnStyle">
+            <Setter Property="Template" >
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="bord" Width="40" Height="40" BorderThickness="2" BorderBrush="Gray" Background="#FFB4B4B4" CornerRadius="10">
+                            <TextBlock x:Name="text" Text="Off" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            <Border.Effect>
+                                <DropShadowEffect Opacity="1" ShadowDepth="1"/>
+                            </Border.Effect>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bord" Property="Background" Value="#FFFFDE1A"/>
+                                <Setter TargetName="bord" Property="BorderBrush" Value="#FFF7FF9F"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="text" Property="Text" Value="On"/>
+                                <Setter TargetName="bord" Property="Background" Value="#FFFFDE1A"/>
+                                <Setter TargetName="bord" Property="BorderBrush" Value="#FFF7FF9F"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </Window.Resources>
     <Grid>
 
-        <Grid Width="400" Height="300">
+        <Grid Width="450" Height="300">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition/>
                 <ColumnDefinition/>
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
-            <ToggleButton Grid.Column="1"  Width="50" Height="20" Name="btn" Background="Red" Click="btn_Click" />
+            <Border Grid.Column="0" Background="Beige" VerticalAlignment="Stretch" />
+            <Border Grid.Column="2" Background="Beige" VerticalAlignment="Stretch" />
+            <Border Grid.Column="1" Background="#FFF8F8AC" VerticalAlignment="Stretch" />
+            <ToggleButton Grid.Column="2" Name="PC2ToPC1" Style="{StaticResource ToggelBtnStyle}" Checked="PC2ToPC1Checked"/>
+            <ToggleButton Grid.Column="0"  Name="PC1ToPC2" Style="{StaticResource ToggelBtnStyle}" Checked="PC1ToPC2Checked"/>
 
-            <Ellipse Width="10" Height="10" Grid.Column="0"  Fill="Gray" Focusable="False" Margin="0,0,115,260"/>
-            <TextBlock Width="98" Height="20" Text="connection state : " Margin="0,0,0,260" />
-            <TextBlock Name="ConnectionState" Width="10" Height="20" Text="F" Margin="110,0,0,260"  />
+            <TextBlock Grid.Column="0" Height="20" Focusable="False" Margin="0,25,0,255" 
+                       HorizontalAlignment="Center" Text="Your IP Address" FontFamily="Ebrima"  />
+            <TextBlock Grid.Column="2" Height="20" Focusable="False" Margin="0,25,0,255" 
+                       HorizontalAlignment="Center" Text="Your IP Address" FontFamily="Ebrima"  />
+            <TextBlock Grid.Column="2" Height="20" Focusable="False" Margin="0,25,0,220" 
+                       HorizontalAlignment="Center" Text="{Binding _IPAddress}" FontFamily="Ebrima"  />
+            <TextBlock Grid.Column="0" Height="20" Focusable="False" Margin="0,25,0,220" 
+                       HorizontalAlignment="Center" Text="{Binding _IPAddress}" FontFamily="Ebrima"  />
+            
+            
+            <TextBlock Grid.Column="0" Height="20" Focusable="False" Margin="0,25,0,180" 
+                       HorizontalAlignment="Center" Text="Second PC IP" FontFamily="Ebrima"  />
+            <TextBlock Grid.Column="2" Height="20" Focusable="False" Margin="0,25,0,180" 
+                       HorizontalAlignment="Center" Text="Second PC IP" FontFamily="Ebrima"  />
+            <TextBox Grid.Column="2" Name="PasswordOfController" Height="20" Width="100" Focusable="True" Margin="0,25,0,140" 
+                       HorizontalAlignment="Center" Text="0.0.0.0" FontFamily="Ebrima" TextChanged="changingpassword_PasswordOfController"  />
+            <TextBox Grid.Column="0" Name="PasswordOfSender"  Height="20" Width="100" Focusable="True" Margin="0,25,0,140" 
+                       HorizontalAlignment="Center" Text="0.0.0.0" FontFamily="Ebrima" TextChanged="changingpassword_PasswordOfSender"  />
+            <TextBlock FontFamily="Microsoft Sans Serif"  Text="CToC Connection" Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Center" />
+            <TextBlock FontFamily="Microsoft Sans Serif"  Text="connect to remote" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Center" />
+            <TextBlock FontFamily="Microsoft Sans Serif"  Text="being the remote" Grid.Column="2" VerticalAlignment="Top" HorizontalAlignment="Center" />
         </Grid>
 
     </Grid>
