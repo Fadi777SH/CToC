@@ -40,11 +40,9 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition/>
                 <ColumnDefinition/>
-                <ColumnDefinition/>
             </Grid.ColumnDefinitions>
             <Border Grid.Column="0" Background="Beige" VerticalAlignment="Stretch" />
             <Border Grid.Column="2" Background="Beige" VerticalAlignment="Stretch" />
-            <Border Grid.Column="1" Background="#FFF8F8AC" VerticalAlignment="Stretch" />
             <ToggleButton Grid.Column="2" Name="PC2ToPC1" Style="{StaticResource ToggelBtnStyle}" Checked="PC2ToPC1Checked"/>
             <ToggleButton Grid.Column="0"  Name="PC1ToPC2" Style="{StaticResource ToggelBtnStyle}" Checked="PC1ToPC2Checked"/>
 
@@ -66,7 +64,6 @@
                        HorizontalAlignment="Center" Text="0.0.0.0" FontFamily="Ebrima" TextChanged="changingpassword_PasswordOfController"  />
             <TextBox Grid.Column="0" Name="PasswordOfSender"  Height="20" Width="100" Focusable="True" Margin="0,25,0,140" 
                        HorizontalAlignment="Center" Text="0.0.0.0" FontFamily="Ebrima" TextChanged="changingpassword_PasswordOfSender"  />
-            <TextBlock FontFamily="Microsoft Sans Serif"  Text="CToC Connection" Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Center" />
             <TextBlock FontFamily="Microsoft Sans Serif"  Text="connect to remote" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Center" />
             <TextBlock FontFamily="Microsoft Sans Serif"  Text="being the remote" Grid.Column="2" VerticalAlignment="Top" HorizontalAlignment="Center" />
         </Grid>

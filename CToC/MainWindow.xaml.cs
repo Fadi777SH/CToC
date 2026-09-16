@@ -21,9 +21,15 @@ namespace CToC
             InitializeComponent();
             DataContext = this;
             this._IPAddress = GetIPAddress().ToString();
+            TcpServer.PC2DisConnect += PC2Disconnect;
 
         }
         public string _IPAddress { get; set; }
+
+        private void PC2Disconnect()
+        {
+            this.Close();
+        }
 
         private IPAddress GetIPAddress()
         {
