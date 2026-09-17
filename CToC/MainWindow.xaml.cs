@@ -109,7 +109,9 @@ namespace CToC
         {
             //inconsistant with the PC corrodinates
             System.Windows.Point MousePoint = GetMousePos();
+            
             MouseChange?.Invoke(MousePoint);
+
         
             
         }

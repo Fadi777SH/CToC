@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
+using System.Printing;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
@@ -81,7 +82,13 @@ namespace CToC.Server
                 }
                 else if (MSG.type == MessageType.point)
                 {
-                    inputsime.Mouse.MoveMouseToPositionOnVirtualDesktop(MSG.point.X, MSG.point.Y);
+                    int screenWidth =  SystemInformation.VirtualScreen.Width;
+                    int screenHeight = SystemInformation.VirtualScreen.Height;
+
+                    double absX = MSG.point.X * (65535.0 / screenWidth);
+                    double absY = MSG.point.Y * (65535.0 / screenHeight);
+
+                    inputsime.Mouse.MoveMouseTo(absX, absY);
                 }
                 else if (MSG.type == MessageType.MouseChange)
                 {
@@ -97,7 +104,7 @@ namespace CToC.Server
                         }
                         if (MSG.MouseSide == System.Windows.Input.MouseButton.Middle)
                         {
-                            //
+                            
                         }
                     }
                 }
