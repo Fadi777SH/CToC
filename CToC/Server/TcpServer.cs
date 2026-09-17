@@ -26,35 +26,34 @@ namespace CToC.Server
 
             socket.Listen(10);
 
-            var Endpoint = new IPEndPoint(IPAddressOfPC2, 22);
             new Thread(async delegate ()
             {
 
                 Accept = await socket.AcceptAsync();
 
                 socket.Close();
-                while (true)
+               
+                
+                try
                 {
-                    try
-                    {
                        
 
-                        MainWindow.KeyPressEvent += PressThisKey;
-                        MainWindow.MouseChange += MouseChangepos;
-                        MainWindow.MousePressEvent += MousePressedDown;
+                    MainWindow.KeyPressEvent += PressThisKey;
+                    MainWindow.MouseChange += MouseChangepos;
+                    MainWindow.MousePressEvent += MousePressedDown;
                         
 
-                    }
-                    catch
-                    {
-
-                        System.Windows.MessageBox.Show("Error");
-                        PC2DisConnect?.Invoke();
-                        break;
-
-
-                    }
                 }
+                catch
+                {
+
+                    System.Windows.MessageBox.Show("Error");
+                    PC2DisConnect?.Invoke();
+                        
+
+
+                }
+                
             })
             {
                 
@@ -66,18 +65,19 @@ namespace CToC.Server
         {
             inputsime = new();
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            var endpint = new IPEndPoint(IPAddressOfPC1,22);
+            var endpint = new IPEndPoint(IPAddressOfPC2,22);
             socket.Connect(endpint);
             
             while (true)
             {
                 byte[] RecievedByte = new byte[255];
-                int size = await socket.ReceiveAsync(RecievedByte);
+                await socket.ReceiveAsync(RecievedByte);
                 //Array.Resize(ref RecievedByte, size);
                 TCPMessage MSG = fromBytes(RecievedByte);
                 if (MSG.type ==MessageType.Keyboard)
                 {
-                    inputsime.Keyboard.KeyPress((WindowsInput.Native.VirtualKeyCode)MSG.key);
+                    inputsime.Keyboard.KeyDown((WindowsInput.Native.VirtualKeyCode)MSG.key);
+                    inputsime.Keyboard.KeyUp((WindowsInput.Native.VirtualKeyCode)MSG.key);
                 }
                 else if (MSG.type == MessageType.point)
                 {
