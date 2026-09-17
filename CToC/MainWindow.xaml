@@ -65,9 +65,9 @@
             <TextBlock Grid.Column="2" Height="20" Focusable="False" Margin="0,25,0,180" 
                        HorizontalAlignment="Center" Text="Second PC IP" FontFamily="Ebrima"  />
             <TextBox Grid.Column="2" Name="PasswordOfController" Height="20" Width="100" Focusable="True" Margin="0,25,0,140" 
-                       HorizontalAlignment="Center" Text="0.0.0.0" FontFamily="Ebrima" TextChanged="changingpassword_PasswordOfController"  />
+                       HorizontalAlignment="Center" Text="192.168.100.74" FontFamily="Ebrima" TextChanged="changingpassword_PasswordOfController"  />
             <TextBox Grid.Column="0" Name="PasswordOfSender"  Height="20" Width="100" Focusable="True" Margin="0,25,0,140" 
-                       HorizontalAlignment="Center" Text="0.0.0.0" FontFamily="Ebrima" TextChanged="changingpassword_PasswordOfSender"  />
+                       HorizontalAlignment="Center" Text="192.168.100.74" FontFamily="Ebrima" TextChanged="changingpassword_PasswordOfSender"  />
             <TextBlock FontFamily="Microsoft Sans Serif"  Text="connect to remote" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Center" />
             <TextBlock FontFamily="Microsoft Sans Serif"  Text="being the remote" Grid.Column="2" VerticalAlignment="Top" HorizontalAlignment="Center" />
         </Grid>

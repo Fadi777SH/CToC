@@ -38,17 +38,11 @@ namespace CToC.Server
                     try
                     {
                        
-                        byte[] buffer = new byte[255];
-                        var rec = await Accept.ReceiveAsync(buffer, 0);
-                        if (rec <= 0)
-                        {
-                            throw new SocketException();
-                        }
-                        Array.Resize(ref buffer, rec);
-                        Debug.WriteLine(Encoding.Default.GetString(buffer));
+
                         MainWindow.KeyPressEvent += PressThisKey;
                         MainWindow.MouseChange += MouseChangepos;
                         MainWindow.MousePressEvent += MousePressedDown;
+                        
 
                     }
                     catch
@@ -74,42 +68,50 @@ namespace CToC.Server
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             var endpint = new IPEndPoint(IPAddressOfPC1,22);
             socket.Connect(endpint);
-            byte[] RecievedByte = new byte[255];
-
-            int size =await socket.ReceiveAsync(RecievedByte);
-            Array.Resize(ref RecievedByte, size);
-            TCPMessage MSG = fromBytes(RecievedByte);
-            if(MSG.type == typeof(Key))
+            
+            while (true)
             {
-                inputsime.Keyboard.KeyPress((WindowsInput.Native.VirtualKeyCode)MSG.key);
-            }
-            else if (MSG.type == typeof(System.Windows.Point))
-            {
-                inputsime.Mouse.MoveMouseToPositionOnVirtualDesktop(MSG.point.X,MSG.point.Y);
-            }
-            else if(MSG.type == typeof(System.Windows.Input.MouseButton))
-            {
-                if(MSG.mousestate == MouseButtonState.Pressed)
+                byte[] RecievedByte = new byte[255];
+                int size = await socket.ReceiveAsync(RecievedByte);
+                //Array.Resize(ref RecievedByte, size);
+                TCPMessage MSG = fromBytes(RecievedByte);
+                if (MSG.type ==MessageType.Keyboard)
                 {
-                    if(MSG.MouseSide == System.Windows.Input.MouseButton.Left)
+                    inputsime.Keyboard.KeyPress((WindowsInput.Native.VirtualKeyCode)MSG.key);
+                }
+                else if (MSG.type == MessageType.point)
+                {
+                    inputsime.Mouse.MoveMouseToPositionOnVirtualDesktop(MSG.point.X, MSG.point.Y);
+                }
+                else if (MSG.type == MessageType.MouseChange)
+                {
+                    if (MSG.mousestate == MouseButtonState.Pressed)
                     {
-                        inputsime.Mouse.LeftButtonClick();
-                    }
-                    if(MSG.MouseSide == System.Windows.Input.MouseButton.Right)
-                    {
-                        inputsime.Mouse.RightButtonClick();
-                    }
-                    if(MSG.MouseSide == System.Windows.Input.MouseButton.Middle)
-                    {
-                        //
+                        if (MSG.MouseSide == System.Windows.Input.MouseButton.Left)
+                        {
+                            inputsime.Mouse.LeftButtonClick();
+                        }
+                        if (MSG.MouseSide == System.Windows.Input.MouseButton.Right)
+                        {
+                            inputsime.Mouse.RightButtonClick();
+                        }
+                        if (MSG.MouseSide == System.Windows.Input.MouseButton.Middle)
+                        {
+                            //
+                        }
                     }
                 }
             }
         }
-
+        enum MessageType
+        {
+            Keyboard,
+            MouseChange,
+            point
+        }
         struct TCPMessage
         {
-            public Type type;
+            public MessageType type;
             public Key key;
             public System.Windows.Input.MouseButton MouseSide;
             public System.Windows.Point point;
@@ -117,16 +119,18 @@ namespace CToC.Server
             public MouseButtonState mousestate;
 
         };
-        byte[] getBytes(TCPMessage str)
+        byte[] getBytesOfTCPMessage(TCPMessage str)
         {
             int size = Marshal.SizeOf(str);
-            byte[] arr = new byte[size];
+
+            byte[] arr = new byte[255];
+            Array.Resize(ref arr, size);
 
             IntPtr ptr = IntPtr.Zero;
             try
             {
                 ptr = Marshal.AllocHGlobal(size);
-                Marshal.StructureToPtr(str, ptr, true);
+                Marshal.StructureToPtr(str, ptr, false);
                 Marshal.Copy(ptr, arr, 0, size);
             }
             finally
@@ -161,12 +165,12 @@ namespace CToC.Server
             TCPMessage MSG = new();
 
             
-            MSG.type = typeof(Key);
+            MSG.type = MessageType.Keyboard;
             MSG.key = key;
             MSG.point = new System.Windows.Point(0,0);
             MSG.mousestate = MouseButtonState.Pressed;
             MSG.MouseSide = System.Windows.Input.MouseButton.Left;
-            byte[] bytes = getBytes(MSG);
+            byte[] bytes = getBytesOfTCPMessage(MSG);
             if (Accept !=null)
             await Accept.SendAsync(bytes);
         }
@@ -176,13 +180,13 @@ namespace CToC.Server
             TCPMessage MSG = new();
       
 
-            MSG.type = typeof(System.Windows.Point);
+            MSG.type = MessageType.point;
             MSG.key = Key.LWin;
             MSG.point = point;
             MSG.MouseSide = System.Windows.Input.MouseButton.Left;
             MSG.mousestate = MouseButtonState.Pressed;
 
-            byte[] bytes = getBytes(MSG);
+            byte[] bytes = getBytesOfTCPMessage(MSG);
             if (Accept != null)
                 await Accept.SendAsync(bytes);
         }
@@ -192,12 +196,12 @@ namespace CToC.Server
             TCPMessage MSG = new();
 
 
-            MSG.type = typeof(System.Windows.Input.MouseButton);
+            MSG.type = MessageType.MouseChange;
             MSG.key = Key.LWin;
             MSG.point = new(0,0);
             MSG.MouseSide = mouseside;
             MSG.mousestate = state;
-            byte[] bytes = getBytes(MSG);
+            byte[] bytes = getBytesOfTCPMessage(MSG);
             if (Accept != null)
                 await Accept.SendAsync(bytes);
         }
