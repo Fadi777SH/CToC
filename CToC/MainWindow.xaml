@@ -5,7 +5,11 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CToC"
         mc:Ignorable="d"
-        Title="MainWindow" ResizeMode="NoResize" Height="300" Width="450" Background="White">
+        Title="MainWindow" ResizeMode="NoResize" PreviewMouseLeftButtonDown="Window_PreviewMouseLeftButtonDown"
+        Height="300" 
+        PreviewMouseRightButtonDown="Window_PreviewMouseRightButtonDown"
+        PreviewMouseMove="Window_PreviewMouseMove" PreviewKeyDown="Window_PreviewKeyDown"
+        Width="450" Background="White">
     <Window.Resources>
         <Style TargetType="ToggleButton" x:Key="ToggelBtnStyle">
             <Setter Property="Template" >
