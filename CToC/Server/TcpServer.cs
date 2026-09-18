@@ -16,7 +16,7 @@ namespace CToC.Server
     {
         Socket? Accept ;
         InputSimulator? inputsime;
-        Socket? Client ;
+        
         public static event Action? PC2DisConnect;
         int ScreenWidth = SystemInformation.VirtualScreen.Width;
         int ScreenHeight = SystemInformation.VirtualScreen.Height;
@@ -25,15 +25,13 @@ namespace CToC.Server
         int ABSY = SystemInformation.VirtualScreen.Y;
         public async Task Sender(IPAddress IPAddressOfPC1 , IPAddress IPAddressOfPC2)
         {
-            
 
+            Accept = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             endPoint = new IPEndPoint(IPAddressOfPC2, 22);
 
             new Thread(async delegate ()
             {
-
-                
-                try
+               try
                 {
                        
 
@@ -61,10 +59,10 @@ namespace CToC.Server
         public async Task Reciever(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
             inputsime = new();
-            Client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            Client.Bind(new IPEndPoint(IPAddress.Any, 22));
+            Socket Client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            Client.Bind(new IPEndPoint(IPAddressOfPC2, 22));
+
             var endpint = new IPEndPoint(IPAddressOfPC2,22);
-            
             
             while (true)
             {
@@ -73,7 +71,7 @@ namespace CToC.Server
                 try
                 {
                     await Client.ReceiveFromAsync(RecievedByte,endpint);
-                    //Array.Resize(ref RecievedByte, size);
+                    
                     TCPMessage MSG = fromBytes(RecievedByte);
                     if (MSG.type == MessageType.Keyboard)
                     {
@@ -236,7 +234,7 @@ namespace CToC.Server
         }
         public async Task disconnectClient()
         {
-            Client?.DisconnectAsync(false);
+            //Client?.DisconnectAsync(false);
         }
     }
 }
