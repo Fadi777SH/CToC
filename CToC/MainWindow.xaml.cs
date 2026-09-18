@@ -83,7 +83,13 @@ namespace CToC
             IPAddress ipofpc2 = IPAddress.Parse(this.PasswordOfController.Text);
             if (btn != null && btn.IsChecked == true)
             {
-                Server.Reciever(ipofpc1, ipofpc2);
+                Server?.Reciever(ipofpc1, ipofpc2);
+            }
+            if (btn != null && btn.IsChecked == false)
+            {
+                Server?.disconnectClient();
+                Server?.disconnectserver();
+                System.Windows.MessageBox.Show("you disconnect .");
             }
         }
 
@@ -97,9 +103,15 @@ namespace CToC
             IPAddress ipofpc2 = IPAddress.Parse(this.PasswordOfController.Text);
             if (btn != null&& btn.IsChecked == true )
             {
-                Server.Sender(ipofpc1, ipofpc2);
+                Server?.Sender(ipofpc1, ipofpc2);
             }
-           
+            if (btn != null && btn.IsChecked == false)
+            {
+                Server?.disconnectClient();
+                Server?.disconnectserver();
+                System.Windows.MessageBox.Show("you disconnect .");
+            }
+
         }
 
         private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -107,12 +119,6 @@ namespace CToC
             KeyPressEvent?.Invoke(e.Key);
         }
 
-        private void Window_PreviewMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
-        {
-
-
-           
-        }
 
         private  Point GetMousePosInDpi(Point MousePoint)
         {
@@ -150,9 +156,9 @@ namespace CToC
         private Point PortionOfCursorInPC2Fram()
         {
             var Mousepos = Mouse.MousePosition.GetCursorPosition();
-            var MouseposDPI = GetMousePosInDpi(Mousepos);
+            
             //the point in the fram 
-            var point = this.PC2Fram.PointFromScreen(MouseposDPI);
+            var point = this.PC2Fram.PointFromScreen(Mousepos);
             
             Point ABSpointofthefram = new(0, 0);
 
@@ -165,5 +171,9 @@ namespace CToC
             return new(PercentofXfarFromTheABS, PercentofYfarFromTheABS);
         }
 
+        private void PC2Fram_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+
+        }
     }
 }

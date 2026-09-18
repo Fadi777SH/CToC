@@ -16,7 +16,7 @@ namespace CToC.Server
     {
         Socket? Accept;
         InputSimulator inputsime;
-
+        Socket? Client;
         public static event Action? PC2DisConnect;
         int ScreenWidth = SystemInformation.VirtualScreen.Width;
         int ScreenHeight = SystemInformation.VirtualScreen.Height;
@@ -68,14 +68,14 @@ namespace CToC.Server
         public async Task Reciever(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
             inputsime = new();
-            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             var endpint = new IPEndPoint(IPAddressOfPC2,22);
-            socket.Connect(endpint);
+            Client.Connect(endpint);
             
             while (true)
             {
                 byte[] RecievedByte = new byte[255];
-                await socket.ReceiveAsync(RecievedByte);
+                await Client.ReceiveAsync(RecievedByte);
                 //Array.Resize(ref RecievedByte, size);
                 TCPMessage MSG = fromBytes(RecievedByte);
                 if (MSG.type ==MessageType.Keyboard)
@@ -94,7 +94,7 @@ namespace CToC.Server
                     double absX = (MSG.point.X ) * (65535.0 / vWidth);
                     double absY = (MSG.point.Y ) * (65535.0 / vHeight);
 
-                    inputsime.Mouse.MoveMouseTo(absX/2, absY/2);
+                    inputsime.Mouse.MoveMouseTo(absX, absY);
                 }
                 else if (MSG.type == MessageType.MouseChange)
                 {
@@ -120,7 +120,8 @@ namespace CToC.Server
         {
             Keyboard,
             MouseChange,
-            point
+            point ,
+            MouseWheel
         }
         struct TCPMessage
         {
@@ -129,6 +130,7 @@ namespace CToC.Server
             public System.Windows.Input.MouseButton MouseSide;
             public System.Windows.Point point;
 
+            
             public MouseButtonState mousestate;
 
         };
@@ -226,6 +228,13 @@ namespace CToC.Server
             var Ypoint = (portion.Y / 100) * ScreenHeight - ABSY;
             return new(Xpoint, Ypoint);
         }
-
+        public async Task disconnectserver()
+        {
+           Accept?.DisconnectAsync(false);
+        }
+        public async Task disconnectClient()
+        {
+            Client?.DisconnectAsync(false);
+        }
     }
 }
