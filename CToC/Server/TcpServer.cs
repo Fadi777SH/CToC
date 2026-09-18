@@ -77,8 +77,10 @@ namespace CToC.Server
                 TCPMessage MSG = fromBytes(RecievedByte);
                 if (MSG.type ==MessageType.Keyboard)
                 {
-                    inputsime.Keyboard.KeyDown((WindowsInput.Native.VirtualKeyCode)MSG.key);
-                    inputsime.Keyboard.KeyUp((WindowsInput.Native.VirtualKeyCode)MSG.key);
+                    int vk = KeyInterop.VirtualKeyFromKey(MSG.key);
+                    var key = (WindowsInput.Native.VirtualKeyCode)vk;
+                    inputsime.Keyboard.KeyDown(key);
+                    inputsime.Keyboard.KeyUp(key);
                 }
                 else if (MSG.type == MessageType.point)
                 {
@@ -87,7 +89,7 @@ namespace CToC.Server
 
                     double absX = MSG.point.X * (65535.0 / screenWidth);
                     double absY = MSG.point.Y * (65535.0 / screenHeight);
-
+         
                     inputsime.Mouse.MoveMouseTo(absX, absY);
                 }
                 else if (MSG.type == MessageType.MouseChange)
@@ -212,5 +214,6 @@ namespace CToC.Server
             if (Accept != null)
                 await Accept.SendAsync(bytes);
         }
+
     }
 }

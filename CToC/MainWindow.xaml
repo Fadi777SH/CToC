@@ -6,10 +6,10 @@
         xmlns:local="clr-namespace:CToC"
         mc:Ignorable="d"
         Title="MainWindow" ResizeMode="NoResize" PreviewMouseLeftButtonDown="Window_PreviewMouseLeftButtonDown"
-        Height="300" 
+        Height="500" 
         PreviewMouseRightButtonDown="Window_PreviewMouseRightButtonDown"
         PreviewMouseMove="Window_PreviewMouseMove" PreviewKeyDown="Window_PreviewKeyDown"
-        Width="450" Background="White">
+        Width="1100" Background="White">
     <Window.Resources>
         <Style TargetType="ToggleButton" x:Key="ToggelBtnStyle">
             <Setter Property="Template" >
@@ -40,13 +40,15 @@
     </Window.Resources>
     <Grid>
 
-        <Grid Width="450" Height="300">
+        <Grid Width="1100" Height="500">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition/>
-                <ColumnDefinition/>
+                <ColumnDefinition Width="0.1*"/>
+                <ColumnDefinition  Name="PC2Grid" Width="0.75*"/>
+                <ColumnDefinition Width="0.1*"/>
             </Grid.ColumnDefinitions>
             <Border Grid.Column="0" Background="Beige" VerticalAlignment="Stretch" />
             <Border Grid.Column="2" Background="Beige" VerticalAlignment="Stretch" />
+            <Border Grid.Column="1" Name="PC2Fram" MouseMove="PC2Fram_MouseMove" Background="#FF332727" VerticalAlignment="Stretch" />
             <ToggleButton Grid.Column="2" Name="PC2ToPC1" Style="{StaticResource ToggelBtnStyle}" Checked="PC2ToPC1Checked"/>
             <ToggleButton Grid.Column="0"  Name="PC1ToPC2" Style="{StaticResource ToggelBtnStyle}" Checked="PC1ToPC2Checked"/>
 
