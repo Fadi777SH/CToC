@@ -31,14 +31,15 @@ namespace CToC.Server
 
             new Thread(async delegate ()
             {
-               try
+                try
                 {
-                       
+
 
                     MainWindow.KeyPressEvent += PressThisKey;
                     MainWindow.MouseChange += MouseChangepos;
                     MainWindow.MousePressEvent += MousePressedDown;
-                        
+
+
 
                 }
                 catch
@@ -53,14 +54,16 @@ namespace CToC.Server
             {
                 
             }.Start();
-            
-            
+            MainWindow.KeyPressEvent -= PressThisKey;
+            MainWindow.MouseChange -= MouseChangepos;
+            MainWindow.MousePressEvent -= MousePressedDown;
+
         }
         public async Task Reciever(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
             inputsime = new();
             Socket Client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            Client.Bind(new IPEndPoint(IPAddressOfPC2, 22));
+            Client.Bind(new IPEndPoint(IPAddressOfPC1, 22));
 
             var endpint = new IPEndPoint(IPAddressOfPC2,22);
             
@@ -197,9 +200,9 @@ namespace CToC.Server
 
             MSG.type = MessageType.point;
             MSG.key = Key.LWin;
-            Debug.WriteLine(portion);
+     
             MSG.point = GetPC2MousePos(portion);
-            Debug.WriteLine(MSG.point);
+       
             MSG.MouseSide = System.Windows.Input.MouseButton.Left;
             MSG.mousestate = MouseButtonState.Pressed;
 

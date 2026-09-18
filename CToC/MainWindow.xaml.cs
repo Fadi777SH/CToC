@@ -114,10 +114,6 @@ namespace CToC
 
         }
 
-        private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            KeyPressEvent?.Invoke(e.Key);
-        }
 
 
         private  Point GetMousePosInDpi(Point MousePoint)
@@ -133,16 +129,7 @@ namespace CToC
             return wpfPoint;
         }
 
-        private void Window_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
 
-            MousePressEvent?.Invoke(System.Windows.Input.MouseButton.Left,e.LeftButton);
-        }
-
-        private void Window_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            MousePressEvent?.Invoke(System.Windows.Input.MouseButton.Right, e.RightButton);
-        }
 
         private void PC2Fram_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
         {
@@ -175,5 +162,22 @@ namespace CToC
         {
 
         }
+
+        private void PC2Fram_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            MousePressEvent?.Invoke(System.Windows.Input.MouseButton.Left, e.LeftButton);
+        }
+
+        private void PC2Fram_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            MousePressEvent?.Invoke(System.Windows.Input.MouseButton.Right, e.RightButton);
+        }
+
+        private void PC2Fram_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+              if(this.PC2Fram.IsMouseOver==true)
+              KeyPressEvent?.Invoke(e.Key);
+        }
+
     }
 }
