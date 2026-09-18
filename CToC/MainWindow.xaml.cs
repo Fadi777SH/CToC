@@ -114,11 +114,10 @@ namespace CToC
            
         }
 
-        private  Point GetMousePosInDpi()
+        private  Point GetMousePosInDpi(Point MousePoint)
         {
  
-            var MousePoint = MousePosition.GetCursorPosition();
-
+         
             //mousepos in DPI
             PresentationSource source = PresentationSource.FromVisual(this);
             Matrix transform = source.CompositionTarget.TransformFromDevice;
@@ -151,9 +150,9 @@ namespace CToC
         private Point PortionOfCursorInPC2Fram()
         {
             var Mousepos = Mouse.MousePosition.GetCursorPosition();
-
+            var MouseposDPI = GetMousePosInDpi(Mousepos);
             //the point in the fram 
-            var point = this.PC2Fram.PointFromScreen(Mousepos);
+            var point = this.PC2Fram.PointFromScreen(MouseposDPI);
             
             Point ABSpointofthefram = new(0, 0);
 

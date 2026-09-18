@@ -87,13 +87,14 @@ namespace CToC.Server
                 }
                 else if (MSG.type == MessageType.point)
                 {
-                    int screenWidth =  SystemInformation.VirtualScreen.Width;
-                    int screenHeight = SystemInformation.VirtualScreen.Height;
 
-                    double absX = MSG.point.X * (65535.0 / screenWidth);
-                    double absY = MSG.point.Y * (65535.0 / screenHeight);
-         
-                    inputsime.Mouse.MoveMouseTo(absX, absY);
+                    int vWidth = SystemInformation.VirtualScreen.Width;
+                    int vHeight = SystemInformation.VirtualScreen.Height;
+
+                    double absX = (MSG.point.X ) * (65535.0 / vWidth);
+                    double absY = (MSG.point.Y ) * (65535.0 / vHeight);
+
+                    inputsime.Mouse.MoveMouseTo(absX/2, absY/2);
                 }
                 else if (MSG.type == MessageType.MouseChange)
                 {
@@ -194,7 +195,9 @@ namespace CToC.Server
 
             MSG.type = MessageType.point;
             MSG.key = Key.LWin;
+            Debug.WriteLine(portion);
             MSG.point = GetPC2MousePos(portion);
+            Debug.WriteLine(MSG.point);
             MSG.MouseSide = System.Windows.Input.MouseButton.Left;
             MSG.mousestate = MouseButtonState.Pressed;
 
