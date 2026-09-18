@@ -9,7 +9,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Input;
 using WindowsInput;
-
+using Point = System.Windows.Point;
 namespace CToC.Server
 {
     public  class TcpServer
@@ -18,7 +18,10 @@ namespace CToC.Server
         InputSimulator inputsime;
 
         public static event Action? PC2DisConnect;
-
+        int ScreenWidth = SystemInformation.VirtualScreen.Width;
+        int ScreenHeight = SystemInformation.VirtualScreen.Height;
+        int ABSX = SystemInformation.VirtualScreen.X;
+        int ABSY = SystemInformation.VirtualScreen.Y;
         public async Task Sender(IPAddress IPAddressOfPC1 , IPAddress IPAddressOfPC2)
         {
             
@@ -183,7 +186,7 @@ namespace CToC.Server
             if (Accept !=null)
             await Accept.SendAsync(bytes);
         }
-        public async void MouseChangepos(System.Windows.Point point)
+        public async void MouseChangepos(System.Windows.Point portion)
         {
 
             TCPMessage MSG = new();
@@ -191,7 +194,7 @@ namespace CToC.Server
 
             MSG.type = MessageType.point;
             MSG.key = Key.LWin;
-            MSG.point = point;
+            MSG.point = GetPC2MousePos(portion);
             MSG.MouseSide = System.Windows.Input.MouseButton.Left;
             MSG.mousestate = MouseButtonState.Pressed;
 
@@ -213,6 +216,12 @@ namespace CToC.Server
             byte[] bytes = getBytesOfTCPMessage(MSG);
             if (Accept != null)
                 await Accept.SendAsync(bytes);
+        }
+        private Point GetPC2MousePos(Point portion)
+        {
+            var Xpoint = (portion.X / 100) * ScreenWidth - ABSX;
+            var Ypoint = (portion.Y / 100) * ScreenHeight - ABSY;
+            return new(Xpoint, Ypoint);
         }
 
     }

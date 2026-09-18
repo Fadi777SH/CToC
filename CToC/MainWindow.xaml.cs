@@ -30,10 +30,7 @@ namespace CToC
         public delegate void MousePressHandler(System.Windows.Input.MouseButton mouseButton,MouseButtonState state);
         public static event MousePressHandler? MousePressEvent;
         public static event Action? StopClient;
-        int ScreenWidth = SystemInformation.VirtualScreen.Width;
-        int ScreenHeight = SystemInformation.VirtualScreen.Height;
-        int ABSX = SystemInformation.VirtualScreen.X;
-        int ABSY = SystemInformation.VirtualScreen.Y;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -146,8 +143,8 @@ namespace CToC
         {
 
             Point portionInFram = PortionOfCursorInPC2Fram();
-            Point MousePointInPC2 = GetPC2MousePos(portionInFram);
-            MouseChange?.Invoke(MousePointInPC2);
+            
+            MouseChange?.Invoke(portionInFram);
 
         }
 
@@ -168,15 +165,6 @@ namespace CToC
             
             return new(PercentofXfarFromTheABS, PercentofYfarFromTheABS);
         }
-        private Point GetPC2MousePos(Point portion)
-        {
-            int ScreenWidth = SystemInformation.VirtualScreen.Width;
-            int ScreenHeight = SystemInformation.VirtualScreen.Height;
-            int ABSX = SystemInformation.VirtualScreen.X;
-            int ABSY = SystemInformation.VirtualScreen.Y;
-            var Xpoint = (portion.X / 100) * ScreenWidth - ABSX;
-            var Ypoint = (portion.Y / 100) * ScreenHeight - ABSY;
-            return new(Xpoint, Ypoint);
-        }
+
     }
 }
