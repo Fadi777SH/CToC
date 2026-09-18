@@ -113,9 +113,8 @@ namespace CToC
         private void Window_PreviewMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
         {
 
-            Point portionInFram = PortionOfCursorInPC2Fram();
-            Point MousePointInPC2 = GetPC2MousePos(portionInFram);
-            MouseChange?.Invoke(MousePointInPC2); 
+
+           
         }
 
         private  Point GetMousePosInDpi()
@@ -148,7 +147,7 @@ namespace CToC
 
             Point portionInFram = PortionOfCursorInPC2Fram();
             Point MousePointInPC2 = GetPC2MousePos(portionInFram);
-            
+            MouseChange?.Invoke(MousePointInPC2);
 
         }
 
