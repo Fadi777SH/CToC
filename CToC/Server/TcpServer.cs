@@ -14,29 +14,24 @@ namespace CToC.Server
 {
     public  class TcpServer
     {
-        Socket? Accept;
-        InputSimulator inputsime;
-        Socket? Client;
+        Socket? Accept ;
+        InputSimulator? inputsime;
+        Socket? Client ;
         public static event Action? PC2DisConnect;
         int ScreenWidth = SystemInformation.VirtualScreen.Width;
         int ScreenHeight = SystemInformation.VirtualScreen.Height;
+        EndPoint endPoint;
         int ABSX = SystemInformation.VirtualScreen.X;
         int ABSY = SystemInformation.VirtualScreen.Y;
         public async Task Sender(IPAddress IPAddressOfPC1 , IPAddress IPAddressOfPC2)
         {
             
-            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            socket.Bind(new IPEndPoint(IPAddressOfPC1 ,22));
 
-            socket.Listen(10);
+            endPoint = new IPEndPoint(IPAddressOfPC2, 22);
 
             new Thread(async delegate ()
             {
 
-                Accept = await socket.AcceptAsync();
-
-                socket.Close();
-               
                 
                 try
                 {
@@ -53,8 +48,6 @@ namespace CToC.Server
 
                     System.Windows.MessageBox.Show("Error");
                     PC2DisConnect?.Invoke();
-                        
-
 
                 }
                 
@@ -68,51 +61,60 @@ namespace CToC.Server
         public async Task Reciever(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
             inputsime = new();
-            Client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            Client.Bind(new IPEndPoint(IPAddress.Any, 22));
             var endpint = new IPEndPoint(IPAddressOfPC2,22);
-            Client.Connect(endpint);
+            
             
             while (true)
             {
+
                 byte[] RecievedByte = new byte[255];
-                await Client.ReceiveAsync(RecievedByte);
-                //Array.Resize(ref RecievedByte, size);
-                TCPMessage MSG = fromBytes(RecievedByte);
-                if (MSG.type ==MessageType.Keyboard)
+                try
                 {
-                    int vk = KeyInterop.VirtualKeyFromKey(MSG.key);
-                    var key = (WindowsInput.Native.VirtualKeyCode)vk;
-                    inputsime.Keyboard.KeyDown(key);
-                    inputsime.Keyboard.KeyUp(key);
-                }
-                else if (MSG.type == MessageType.point)
-                {
-
-                    int vWidth = SystemInformation.VirtualScreen.Width;
-                    int vHeight = SystemInformation.VirtualScreen.Height;
-
-                    double absX = (MSG.point.X ) * (65535.0 / vWidth);
-                    double absY = (MSG.point.Y ) * (65535.0 / vHeight);
-
-                    inputsime.Mouse.MoveMouseTo(absX, absY);
-                }
-                else if (MSG.type == MessageType.MouseChange)
-                {
-                    if (MSG.mousestate == MouseButtonState.Pressed)
+                    await Client.ReceiveFromAsync(RecievedByte,endpint);
+                    //Array.Resize(ref RecievedByte, size);
+                    TCPMessage MSG = fromBytes(RecievedByte);
+                    if (MSG.type == MessageType.Keyboard)
                     {
-                        if (MSG.MouseSide == System.Windows.Input.MouseButton.Left)
+                        int vk = KeyInterop.VirtualKeyFromKey(MSG.key);
+                        var key = (WindowsInput.Native.VirtualKeyCode)vk;
+                        inputsime.Keyboard.KeyDown(key);
+                        inputsime.Keyboard.KeyUp(key);
+                    }
+                    else if (MSG.type == MessageType.point)
+                    {
+
+                        int vWidth = SystemInformation.VirtualScreen.Width;
+                        int vHeight = SystemInformation.VirtualScreen.Height;
+
+                        double absX = (MSG.point.X) * (65535.0 / vWidth);
+                        double absY = (MSG.point.Y) * (65535.0 / vHeight);
+
+                        inputsime.Mouse.MoveMouseTo(absX, absY);
+                    }
+                    else if (MSG.type == MessageType.MouseChange)
+                    {
+                        if (MSG.mousestate == MouseButtonState.Pressed)
                         {
-                            inputsime.Mouse.LeftButtonClick();
-                        }
-                        if (MSG.MouseSide == System.Windows.Input.MouseButton.Right)
-                        {
-                            inputsime.Mouse.RightButtonClick();
-                        }
-                        if (MSG.MouseSide == System.Windows.Input.MouseButton.Middle)
-                        {
-                            
+                            if (MSG.MouseSide == System.Windows.Input.MouseButton.Left)
+                            {
+                                inputsime.Mouse.LeftButtonClick();
+                            }
+                            if (MSG.MouseSide == System.Windows.Input.MouseButton.Right)
+                            {
+                                inputsime.Mouse.RightButtonClick();
+                            }
+                            if (MSG.MouseSide == System.Windows.Input.MouseButton.Middle)
+                            {
+
+                            }
                         }
                     }
+                }
+                catch(Exception ex)
+                {
+                    System.Windows.MessageBox.Show(ex.Message);
                 }
             }
         }
@@ -187,7 +189,7 @@ namespace CToC.Server
             MSG.MouseSide = System.Windows.Input.MouseButton.Left;
             byte[] bytes = getBytesOfTCPMessage(MSG);
             if (Accept !=null)
-            await Accept.SendAsync(bytes);
+            await Accept.SendToAsync(bytes,endPoint);
         }
         public async void MouseChangepos(System.Windows.Point portion)
         {
@@ -205,7 +207,7 @@ namespace CToC.Server
 
             byte[] bytes = getBytesOfTCPMessage(MSG);
             if (Accept != null)
-                await Accept.SendAsync(bytes);
+                await Accept.SendToAsync(bytes, endPoint);
         }
         public async void MousePressedDown(System.Windows.Input.MouseButton mouseside, MouseButtonState state)
         {
@@ -220,7 +222,7 @@ namespace CToC.Server
             MSG.mousestate = state;
             byte[] bytes = getBytesOfTCPMessage(MSG);
             if (Accept != null)
-                await Accept.SendAsync(bytes);
+                await Accept.SendToAsync(bytes, endPoint);
         }
         private Point GetPC2MousePos(Point portion)
         {
