@@ -68,6 +68,7 @@ namespace CToC
         {
             if (this.PasswordOfSender.Text.Length > 15)
                 PasswordOfSender.Text = PasswordOfSender.Text.Substring(0,4);
+            
         }
 
         private void changingpassword_PasswordOfController(object sender, System.Windows.Controls.TextChangedEventArgs e)
@@ -82,6 +83,7 @@ namespace CToC
 
             IPAddress ipofpc1 = IPAddress.Parse(_IPAddress);
             IPAddress ipofpc2 = IPAddress.Parse(this.PasswordOfController.Text);
+
             if (btn != null && btn.IsChecked == true)
             {
                 Server?.Reciever(ipofpc1, ipofpc2);
@@ -100,7 +102,8 @@ namespace CToC
             Server = new();
 
             IPAddress ipofpc1 = IPAddress.Parse(_IPAddress);
-            IPAddress ipofpc2 = IPAddress.Parse(this.PasswordOfController.Text);
+            IPAddress ipofpc2 = IPAddress.Parse(this.PasswordOfSender.Text);
+
             if (btn != null&& btn.IsChecked == true )
             {
                 Server?.Sender(ipofpc1, ipofpc2);
@@ -180,8 +183,8 @@ namespace CToC
 
         private void Window_Closed(object sender, EventArgs e)
         {
-            EndClientConnection?.Invoke();
-            EndServerConnection?.Invoke();
+            //EndClientConnection?.Invoke();
+            //EndServerConnection?.Invoke();
         }
     }
 }

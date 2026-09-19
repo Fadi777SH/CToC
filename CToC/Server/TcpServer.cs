@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Interop;
 using WindowsInput;
 using Point = System.Windows.Point;
 namespace CToC.Server
@@ -73,10 +74,11 @@ namespace CToC.Server
         {
             inputsime = new();
             Client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            
             Client.Bind(new IPEndPoint(IPAddressOfPC1, PORT));
 
             var Serverendpint = new IPEndPoint(IPAddressOfPC2,PORT);
-            
+        
             while (true)
             {
 
@@ -103,7 +105,8 @@ namespace CToC.Server
                         double absX = (MSG.point.X) * (65535.0 / vWidth);
                         double absY = (MSG.point.Y) * (65535.0 / vHeight);
 
-                        inputsime.Mouse.MoveMouseTo(absX, absY);
+                        //inputsime.Mouse.MoveMouseTo(absX, absY);
+                        SetCursorPos(MSG.point.X, MSG.point.Y);
                     }
                     else if (MSG.type == MessageType.MouseChange)
                     {
@@ -130,6 +133,10 @@ namespace CToC.Server
                 }
             }
         }
+        [DllImport("user32.dll")]
+        static extern bool SetCursorPos(double x, double y);
+
+        
         enum MessageType
         {
             Keyboard,
@@ -254,8 +261,8 @@ namespace CToC.Server
 
         public void disconnectClient()
         {
-            if (Client != null)
-                Client.Close();
+           // if (Client != null)
+               // Client.Close();
         }
     }
 }
