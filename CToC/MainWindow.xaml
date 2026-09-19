@@ -8,6 +8,7 @@
         Title="MainWindow" ResizeMode="NoResize"
         Height="500" 
         PreviewKeyDown="PC2Fram_PreviewKeyDown"
+        Closed="Window_Closed"
         Width="1100" Background="White">
     <Window.Resources>
         <Style TargetType="ToggleButton" x:Key="ToggelBtnStyle">
@@ -50,6 +51,7 @@
             <Border Grid.Column="1" Name="PC2Fram" MouseMove="PC2Fram_MouseMove"
                     MouseLeftButtonDown="PC2Fram_MouseLeftButtonDown"
                     MouseRightButtonDown="PC2Fram_MouseRightButtonDown"
+                    
                     Background="#FF332727" VerticalAlignment="Stretch" />
             <ToggleButton Grid.Column="2" Name="PC2ToPC1" Style="{StaticResource ToggelBtnStyle}" Click="PC2ToPC1Checked"/>
             <ToggleButton Grid.Column="0"  Name="PC1ToPC2" Style="{StaticResource ToggelBtnStyle}" Click="PC1ToPC2Checked"/>

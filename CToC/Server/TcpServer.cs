@@ -19,6 +19,8 @@ namespace CToC.Server
         Socket? Client;
         int PORT = 22;
         public static event Action? PC2DisConnect;
+        private bool ServerShotDown = false;
+        private bool ClientShotDown = false;
         int ScreenWidth = SystemInformation.VirtualScreen.Width;
         int ScreenHeight = SystemInformation.VirtualScreen.Height;
         EndPoint endPoint;
@@ -34,9 +36,11 @@ namespace CToC.Server
             {
                 try
                 {
+                    MainWindow.EndServerConnection += MainWindow_EndServerConnection;
                     MainWindow.KeyPressEvent += PressThisKey;
                     MainWindow.MouseChange += MouseChangepos;
                     MainWindow.MousePressEvent += MousePressedDown;
+                    
                 }
                 catch
                 {
@@ -53,15 +57,25 @@ namespace CToC.Server
             MainWindow.KeyPressEvent -= PressThisKey;
             MainWindow.MouseChange -= MouseChangepos;
             MainWindow.MousePressEvent -= MousePressedDown;
-
+            MainWindow.EndServerConnection -= MainWindow_EndServerConnection;
         }
+
+        private void MainWindow_EndServerConnection()
+        {
+            if (Accept != null && ServerShotDown == false)
+            {
+                Accept.Close();
+                ServerShotDown = true;
+            }
+        }
+
         public async Task Reciever(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
             inputsime = new();
             Client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             Client.Bind(new IPEndPoint(IPAddressOfPC1, PORT));
 
-            var endpint = new IPEndPoint(IPAddressOfPC2,PORT);
+            var Serverendpint = new IPEndPoint(IPAddressOfPC2,PORT);
             
             while (true)
             {
@@ -69,7 +83,8 @@ namespace CToC.Server
                 byte[] RecievedByte = new byte[255];
                 try
                 {
-                    await Client.ReceiveFromAsync(RecievedByte,endpint);
+                    MainWindow.EndClientConnection += disconnectClient;
+                    await Client.ReceiveFromAsync(RecievedByte,Serverendpint);
                     
                     TCPMessage MSG = fromBytes(RecievedByte);
                     if (MSG.type == MessageType.Keyboard)
@@ -185,7 +200,7 @@ namespace CToC.Server
             MSG.mousestate = MouseButtonState.Pressed;
             MSG.MouseSide = System.Windows.Input.MouseButton.Left;
             byte[] bytes = getBytesOfTCPMessage(MSG);
-            if (Accept !=null)
+            if (Accept !=null&& ServerShotDown==false)
             await Accept.SendToAsync(bytes,endPoint);
         }
         public async void MouseChangepos(System.Windows.Point portion)
@@ -203,8 +218,11 @@ namespace CToC.Server
             MSG.mousestate = MouseButtonState.Pressed;
 
             byte[] bytes = getBytesOfTCPMessage(MSG);
-            if (Accept != null)
+            if (Accept != null && ServerShotDown==false)
+            {
                 await Accept.SendToAsync(bytes, endPoint);
+            }
+
         }
         public async void MousePressedDown(System.Windows.Input.MouseButton mouseside, MouseButtonState state)
         {
@@ -218,8 +236,14 @@ namespace CToC.Server
             MSG.MouseSide = mouseside;
             MSG.mousestate = state;
             byte[] bytes = getBytesOfTCPMessage(MSG);
-            if (Accept != null)
-                await Accept.SendToAsync(bytes, endPoint);
+
+
+            if (Accept != null && ServerShotDown == false)
+            {
+               await Accept.SendToAsync(bytes, endPoint);
+               
+
+            }
         }
         private Point GetPC2MousePos(Point portion)
         {
@@ -227,15 +251,11 @@ namespace CToC.Server
             var Ypoint = (portion.Y / 100) * ScreenHeight - ABSY;
             return new(Xpoint, Ypoint);
         }
-        public async Task disconnectserver()
+
+        public void disconnectClient()
         {
-            if(Accept?.Connected == true)
-           Accept?.DisconnectAsync(false);
-        }
-        public async Task disconnectClient()
-        {
-            if (Client?.Connected == true)
-                Client?.DisconnectAsync(false);
+            if (Client != null)
+                Client.Close();
         }
     }
 }

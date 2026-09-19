@@ -29,8 +29,9 @@ namespace CToC
         public static event KeyPressHandler? KeyPressEvent;
         public delegate void MousePressHandler(System.Windows.Input.MouseButton mouseButton,MouseButtonState state);
         public static event MousePressHandler? MousePressEvent;
-        public static event Action? StopClient;
+        public static event Action? EndClientConnection;
 
+        public static event Action? EndServerConnection;
         public MainWindow()
         {
             InitializeComponent();
@@ -87,9 +88,8 @@ namespace CToC
             }
             if (btn != null && btn.IsChecked == false)
             {
-                Server?.disconnectClient();
-                //Server?.disconnectserver();
-                System.Windows.MessageBox.Show("you disconnect .");
+                EndClientConnection?.Invoke();
+                System.Windows.MessageBox.Show("you disconnect as Client .");
             }
         }
 
@@ -107,9 +107,8 @@ namespace CToC
             }
             if (btn != null && btn.IsChecked == false)
             {
-                //Server?.disconnectClient();
-                Server?.disconnectserver();
-                System.Windows.MessageBox.Show("you disconnect .");
+                EndServerConnection?.Invoke();
+                System.Windows.MessageBox.Show("you disconnect your Server .");
             }
 
         }
@@ -179,5 +178,10 @@ namespace CToC
               KeyPressEvent?.Invoke(e.Key);
         }
 
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            EndClientConnection?.Invoke();
+            EndServerConnection?.Invoke();
+        }
     }
 }
