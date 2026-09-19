@@ -16,7 +16,8 @@ namespace CToC.Server
     {
         Socket? Accept ;
         InputSimulator? inputsime;
-        
+        Socket? Client;
+        int PORT = 22;
         public static event Action? PC2DisConnect;
         int ScreenWidth = SystemInformation.VirtualScreen.Width;
         int ScreenHeight = SystemInformation.VirtualScreen.Height;
@@ -25,22 +26,17 @@ namespace CToC.Server
         int ABSY = SystemInformation.VirtualScreen.Y;
         public async Task Sender(IPAddress IPAddressOfPC1 , IPAddress IPAddressOfPC2)
         {
-
+            if (Accept?.Connected == true) return;
             Accept = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            endPoint = new IPEndPoint(IPAddressOfPC2, 22);
+            endPoint = new IPEndPoint(IPAddressOfPC2, PORT);
 
             new Thread(async delegate ()
             {
                 try
                 {
-
-
                     MainWindow.KeyPressEvent += PressThisKey;
                     MainWindow.MouseChange += MouseChangepos;
                     MainWindow.MousePressEvent += MousePressedDown;
-
-
-
                 }
                 catch
                 {
@@ -62,10 +58,10 @@ namespace CToC.Server
         public async Task Reciever(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
             inputsime = new();
-            Socket Client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            Client.Bind(new IPEndPoint(IPAddressOfPC1, 22));
+            Client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            Client.Bind(new IPEndPoint(IPAddressOfPC1, PORT));
 
-            var endpint = new IPEndPoint(IPAddressOfPC2,22);
+            var endpint = new IPEndPoint(IPAddressOfPC2,PORT);
             
             while (true)
             {
@@ -233,11 +229,13 @@ namespace CToC.Server
         }
         public async Task disconnectserver()
         {
+            if(Accept?.Connected == true)
            Accept?.DisconnectAsync(false);
         }
         public async Task disconnectClient()
         {
-            //Client?.DisconnectAsync(false);
+            if (Client?.Connected == true)
+                Client?.DisconnectAsync(false);
         }
     }
 }

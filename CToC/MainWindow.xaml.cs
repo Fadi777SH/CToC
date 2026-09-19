@@ -88,7 +88,7 @@ namespace CToC
             if (btn != null && btn.IsChecked == false)
             {
                 Server?.disconnectClient();
-                Server?.disconnectserver();
+                //Server?.disconnectserver();
                 System.Windows.MessageBox.Show("you disconnect .");
             }
         }
@@ -107,7 +107,7 @@ namespace CToC
             }
             if (btn != null && btn.IsChecked == false)
             {
-                Server?.disconnectClient();
+                //Server?.disconnectClient();
                 Server?.disconnectserver();
                 System.Windows.MessageBox.Show("you disconnect .");
             }
