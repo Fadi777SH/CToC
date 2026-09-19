@@ -104,9 +104,9 @@ namespace CToC.Server
 
                         double absX = (MSG.point.X) * (65535.0 / vWidth);
                         double absY = (MSG.point.Y) * (65535.0 / vHeight);
-
+                        var P = GetPC2MousePos(MSG.point);
                         //inputsime.Mouse.MoveMouseTo(absX, absY);
-                        SetCursorPos(MSG.point.X, MSG.point.Y);
+                        SetCursorPos((int)P.X,(int)P.Y);
                     }
                     else if (MSG.type == MessageType.MouseChange)
                     {
@@ -134,7 +134,7 @@ namespace CToC.Server
             }
         }
         [DllImport("user32.dll")]
-        static extern bool SetCursorPos(double x, double y);
+        static extern bool SetCursorPos(int x, int y);
 
         
         enum MessageType
@@ -219,7 +219,7 @@ namespace CToC.Server
             MSG.type = MessageType.point;
             MSG.key = Key.LWin;
      
-            MSG.point = GetPC2MousePos(portion);
+            MSG.point = portion;
        
             MSG.MouseSide = System.Windows.Input.MouseButton.Left;
             MSG.mousestate = MouseButtonState.Pressed;
@@ -254,8 +254,8 @@ namespace CToC.Server
         }
         private Point GetPC2MousePos(Point portion)
         {
-            var Xpoint = (portion.X / 100) * ScreenWidth - ABSX;
-            var Ypoint = (portion.Y / 100) * ScreenHeight - ABSY;
+            var Xpoint = (portion.X / 100) * ScreenWidth + ABSX;
+            var Ypoint = (portion.Y / 100) * ScreenHeight + ABSY;
             return new(Xpoint, Ypoint);
         }
 
