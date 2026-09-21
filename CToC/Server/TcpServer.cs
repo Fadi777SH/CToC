@@ -281,50 +281,37 @@ namespace CToC.Server
            // if (Client != null)
                // Client.Close();
         }
-        private void SendScreenFromClient(EndPoint Serverendpint)
+        private async void SendScreenFromClient(EndPoint Serverendpint)
         {
             Rectangle screenrectangle = new(ScreenX, ScreenY, ScreenWidth, ScreenHeight);
-            _ = Task.Run(async () =>
-            {
                 
-                {
-                    try
-                    {
-                        var Bitmap = RecordScreen.Recordscreen(screenrectangle);
-                        var bytes = RecordScreen.BitmapTobyteConverter(Bitmap); 
-                        await Client?.SendToAsync(bytes,Serverendpint);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine(ex); // don't MessageBox inside a loop
-                    }
+            try
+            {
+                var Bitmap = RecordScreen.Recordscreen(screenrectangle);
+                var bytes = RecordScreen.BitmapTobyteConverter(Bitmap); 
+                await Client?.SendToAsync(bytes,Serverendpint);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex); // don't MessageBox inside a loop
+            }
 
-                }
-            });
         }
-        private void CaptureScreenFromClient(EndPoint Serverendpint)
+        private async void CaptureScreenFromClient(EndPoint Serverendpint)
         {
             Rectangle screenrectangle = new(ScreenX, ScreenY, ScreenWidth, ScreenHeight);
-            _ = Task.Run(async () =>
+
             {
-               
-                {
-                    try
-                    {
 
-                        var bytes = new byte[255];
-                        var Size = await Accept?.ReceiveFromAsync(bytes, Serverendpint);
-                        Array.Resize(ref bytes, Size.ReceivedBytes);
-                        SingleFram?.Invoke(bytes);
+                var bytes = new byte[255];
+                var Size = await Accept?.ReceiveFromAsync(bytes, Serverendpint);
+                Array.Resize(ref bytes, Size.ReceivedBytes);
+                SingleFram?.Invoke(bytes);
 
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine(ex); // don't MessageBox inside a loop
-                    }
+            }
 
-                }
-            });
+
+
         }
     }
 }
