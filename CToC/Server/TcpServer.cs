@@ -24,7 +24,7 @@ namespace CToC.Server
         int PORT = 22;
         private int ScreenX = SystemInformation.VirtualScreen.X;
         private int ScreenY = SystemInformation.VirtualScreen.Y;
-
+       
         public static event Action? PC2DisConnect;
         private bool ServerShotDown = false;
         private bool ClientShotDown = false;
@@ -33,7 +33,7 @@ namespace CToC.Server
         EndPoint endPoint;
         int ABSX = SystemInformation.VirtualScreen.X;
         int ABSY = SystemInformation.VirtualScreen.Y;
-
+       
         public delegate void framCapture(byte[] bytes);
         public static event framCapture? SingleFram;
         public async Task Sender(IPAddress IPAddressOfPC1 , IPAddress IPAddressOfPC2)
@@ -53,8 +53,7 @@ namespace CToC.Server
                     MainWindow.KeyPressEvent += PressThisKey;
                     MainWindow.MouseChange += MouseChangepos;
                     MainWindow.MousePressEvent += MousePressedDown;
-
-                    CaptureScreenFromClient(endPoint);
+;
                 }
                 catch
                 {
@@ -68,6 +67,21 @@ namespace CToC.Server
             {
                 
             }.Start();
+
+            while (true)
+            {
+                byte[] rcc = new byte[255];
+                try
+                {
+                    await Accept.ReceiveFromAsync(rcc, endPoint);
+                    SingleFram?.Invoke(rcc);
+                }
+                catch
+                {
+
+                }
+            }
+
             MainWindow.KeyPressEvent -= PressThisKey;
             MainWindow.MouseChange -= MouseChangepos;
             MainWindow.MousePressEvent -= MousePressedDown;
@@ -92,7 +106,31 @@ namespace CToC.Server
 
             var Serverendpint = new IPEndPoint(IPAddressOfPC2,PORT);
 
+            Rectangle screenrectangle = new(ScreenX, ScreenY, ScreenWidth, ScreenHeight);
 
+            new Thread(async delegate ()
+            {
+                while (true&&Client!=null)
+                {
+                    try
+                    {
+                        var Bitmap = RecordScreen.Recordscreen(screenrectangle);
+                        var bytes = RecordScreen.BitmapTobyteConverter(Bitmap);
+                        await Client?.SendToAsync(bytes, Serverendpint);
+                    }
+                    catch
+                    {
+
+                        System.Windows.MessageBox.Show("Error");
+                        PC2DisConnect?.Invoke();
+
+                    }
+                }
+
+            })
+            {
+
+            }.Start();
 
 
             while (true)
@@ -104,8 +142,9 @@ namespace CToC.Server
                 try
                 {
                     MainWindow.EndClientConnection += disconnectClient;
-                    await Client.ReceiveFromAsync(RecievedByte,Serverendpint);
-                    SendScreenFromClient(Serverendpint);
+
+                    await Client.ReceiveFromAsync(RecievedByte, Serverendpint);
+
                     TCPMessage MSG = fromBytes(RecievedByte);
                     if (MSG.type == MessageType.Keyboard)
                     {
@@ -287,9 +326,7 @@ namespace CToC.Server
                 
             try
             {
-                var Bitmap = RecordScreen.Recordscreen(screenrectangle);
-                var bytes = RecordScreen.BitmapTobyteConverter(Bitmap); 
-                await Client?.SendToAsync(bytes,Serverendpint);
+
             }
             catch (Exception ex)
             {
