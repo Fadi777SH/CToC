@@ -108,29 +108,6 @@ namespace CToC.Server
 
             Rectangle screenrectangle = new(ScreenX, ScreenY, ScreenWidth, ScreenHeight);
 
-            new Thread(async delegate ()
-            {
-                while (true&&Client!=null)
-                {
-                    try
-                    {
-                        var Bitmap = RecordScreen.Recordscreen(screenrectangle);
-                        var bytes = RecordScreen.BitmapTobyteConverter(Bitmap);
-                        await Client?.SendToAsync(bytes, Serverendpint);
-                    }
-                    catch
-                    {
-
-                        System.Windows.MessageBox.Show("Error");
-                        PC2DisConnect?.Invoke();
-
-                    }
-                }
-
-            })
-            {
-
-            }.Start();
 
 
             while (true)
@@ -183,6 +160,12 @@ namespace CToC.Server
                             }
                         }
                     }
+                    var Bitmap = RecordScreen.Recordscreen(screenrectangle);
+                    var bytes = RecordScreen.BitmapTobyteConverter(Bitmap);
+                   
+                    Debug.WriteLine(bytes.Length);
+                    if (Client != null)
+                        await Client.SendToAsync(bytes, Serverendpint);
                 }
                 catch(Exception ex)
                 {
@@ -350,5 +333,6 @@ namespace CToC.Server
 
 
         }
+    
     }
 }

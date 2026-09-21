@@ -73,7 +73,6 @@ namespace CToC.Screen
 
         public static Bitmap Recordscreen(Rectangle screenbound)
         {
-            watchtime.Start();
             Bitmap imagemap = new(screenbound.Width,screenbound.Height);
             using (Graphics g = Graphics.FromImage(imagemap))
             {
