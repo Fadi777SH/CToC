@@ -24,6 +24,7 @@ namespace CToC.Server
         int PORT = 22;
         private int ScreenX = SystemInformation.VirtualScreen.X;
         private int ScreenY = SystemInformation.VirtualScreen.Y;
+
         public static event Action? PC2DisConnect;
         private bool ServerShotDown = false;
         private bool ClientShotDown = false;
@@ -32,6 +33,9 @@ namespace CToC.Server
         EndPoint endPoint;
         int ABSX = SystemInformation.VirtualScreen.X;
         int ABSY = SystemInformation.VirtualScreen.Y;
+
+        public delegate void framCapture(byte[] bytes);
+        public static event framCapture? SingleFram;
         public async Task Sender(IPAddress IPAddressOfPC1 , IPAddress IPAddressOfPC2)
         {
             if (Accept?.Connected == true) return;
@@ -40,7 +44,6 @@ namespace CToC.Server
             endPoint = new IPEndPoint(IPAddressOfPC2, PORT);
 
 
-            CaptureScreenFromClient(endPoint);
 
             new Thread(async delegate ()
             {
@@ -50,7 +53,8 @@ namespace CToC.Server
                     MainWindow.KeyPressEvent += PressThisKey;
                     MainWindow.MouseChange += MouseChangepos;
                     MainWindow.MousePressEvent += MousePressedDown;
-                    
+
+                    CaptureScreenFromClient(endPoint);
                 }
                 catch
                 {
@@ -311,6 +315,7 @@ namespace CToC.Server
                         var bytes = new byte[255];
                         var Size = await Accept.ReceiveFromAsync(bytes, Serverendpint);
                         Array.Resize(ref bytes, Size.ReceivedBytes);
+                        SingleFram?.Invoke(bytes);
 
                     }
                     catch (Exception ex)

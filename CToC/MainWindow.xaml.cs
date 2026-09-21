@@ -50,31 +50,26 @@ namespace CToC
 
             this._IPAddress = GetIPAddress().ToString();
             TcpServer.PC2DisConnect += PC2Disconnect;
-            StartCapture();
+            TcpServer.SingleFram += StartCapture;
 
         }
 
         
-        private void StartCapture()
+        public async void StartCapture(byte[] bytes)
         {
             Rectangle screenrectangle = new(ScreenX, ScreenY, ScreenWidth, ScreenHeight);
-            _ = Task.Run(async () =>
-            {
-                while (true)
-                {
-                    try
-                    {
-                       var e= RecordScreen.Recordscreen(screenrectangle);
-                       var f = ConvertToImageSource(e);
-                       Dispatcher.Invoke(() => this.Imagese.Source = f);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine(ex); // don't MessageBox inside a loop
-                    }
 
-                }
-            });
+            try
+            {
+                var e = RecordScreen.ByteToBitmMap(bytes);      
+                var f = ConvertToImageSource(e);
+                Dispatcher.Invoke(() => this.Imagese.Source = f);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex); // don't MessageBox inside a loop
+            }
+
         }
         public static BitmapImage ConvertToImageSource(System.Drawing.Image image)
         {
