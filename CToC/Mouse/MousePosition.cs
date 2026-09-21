@@ -31,6 +31,7 @@ namespace CToC.Mouse
             GetCursorPos(out lpPoint);
             return lpPoint;
         }
-
+        [DllImport("user32.dll")]
+        public static extern bool SetCursorPos(int x, int y);
     }
 }

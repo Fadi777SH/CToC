@@ -12,7 +12,7 @@
         Width="1100" Background="White">
     <Window.Resources>
         <Style TargetType="ToggleButton" x:Key="ToggelBtnStyle">
-            <Setter Property="Template" >
+            <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ToggleButton">
                         <Border x:Name="bord" Width="40" Height="40" BorderThickness="2" BorderBrush="Gray" Background="#FFB4B4B4" CornerRadius="10">
@@ -36,47 +36,42 @@
                 </Setter.Value>
             </Setter>
         </Style>
-
     </Window.Resources>
-    <Grid>
 
+    <Grid>
         <Grid Width="1100" Height="500">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="0.1*"/>
-                <ColumnDefinition  Name="PC2Grid" Width="0.75*"/>
+                <ColumnDefinition Name="PC2Grid" Width="0.75*"/>
                 <ColumnDefinition Width="0.1*"/>
             </Grid.ColumnDefinitions>
+
             <Border Grid.Column="0" Background="Beige" VerticalAlignment="Stretch" />
             <Border Grid.Column="2" Background="Beige" VerticalAlignment="Stretch" />
-            <Border Grid.Column="1" Name="PC2Fram" MouseMove="PC2Fram_MouseMove"
+            <Border Grid.Column="1" Name="PC2Fram" 
+                    MouseMove="PC2Fram_MouseMove"
                     MouseLeftButtonDown="PC2Fram_MouseLeftButtonDown"
                     MouseRightButtonDown="PC2Fram_MouseRightButtonDown"
-                    
-                    Background="#FF332727" VerticalAlignment="Stretch" />
+                    Background="#FF332727" VerticalAlignment="Stretch" >
+                <Image Name="Imagese" Source="{Binding}" Width="300" Height="300"/>
+            </Border>
+
             <ToggleButton Grid.Column="2" Name="PC2ToPC1" Style="{StaticResource ToggelBtnStyle}" Click="PC2ToPC1Checked"/>
-            <ToggleButton Grid.Column="0"  Name="PC1ToPC2" Style="{StaticResource ToggelBtnStyle}" Click="PC1ToPC2Checked"/>
+            <ToggleButton Grid.Column="0" Name="PC1ToPC2" Style="{StaticResource ToggelBtnStyle}" Click="PC1ToPC2Checked"/>
 
-            <TextBlock Grid.Column="0" Height="20" Focusable="False" Margin="0,25,0,255" 
-                       HorizontalAlignment="Center" Text="Your IP Address" FontFamily="Ebrima"  />
-            <TextBlock Grid.Column="2" Height="20" Focusable="False" Margin="0,25,0,255" 
-                       HorizontalAlignment="Center" Text="Your IP Address" FontFamily="Ebrima"  />
-            <TextBlock Grid.Column="2" Height="20" Focusable="False" Margin="0,25,0,220" 
-                       HorizontalAlignment="Center" Text="{Binding _IPAddress}" FontFamily="Ebrima"  />
-            <TextBlock Grid.Column="0" Height="20" Focusable="False" Margin="0,25,0,220" 
-                       HorizontalAlignment="Center" Text="{Binding _IPAddress}" FontFamily="Ebrima"  />
-            
-            
-            <TextBlock Grid.Column="0" Height="20" Focusable="False" Margin="0,25,0,180" 
-                       HorizontalAlignment="Center" Text="Second PC IP" FontFamily="Ebrima"  />
-            <TextBlock Grid.Column="2" Height="20" Focusable="False" Margin="0,25,0,180" 
-                       HorizontalAlignment="Center" Text="Second PC IP" FontFamily="Ebrima"  />
-            <TextBox Grid.Column="2" Name="PasswordOfController" Height="20" Width="100" Focusable="True" Margin="0,25,0,140" 
-                       HorizontalAlignment="Center" Text="192.168.100.74" FontFamily="Ebrima" TextChanged="changingpassword_PasswordOfController"  />
-            <TextBox Grid.Column="0" Name="PasswordOfSender"  Height="20" Width="100" Focusable="True" Margin="0,25,0,140" 
-                       HorizontalAlignment="Center" Text="192.168.100.74" FontFamily="Ebrima" TextChanged="changingpassword_PasswordOfSender"  />
-            <TextBlock FontFamily="Microsoft Sans Serif"  Text="connect to remote" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Center" />
-            <TextBlock FontFamily="Microsoft Sans Serif"  Text="being the remote" Grid.Column="2" VerticalAlignment="Top" HorizontalAlignment="Center" />
+            <TextBlock Grid.Column="0" Height="20" Focusable="False" Margin="0,25,0,255" HorizontalAlignment="Center" Text="Your IP Address" FontFamily="Ebrima" />
+            <TextBlock Grid.Column="2" Height="20" Focusable="False" Margin="0,25,0,255" HorizontalAlignment="Center" Text="Your IP Address" FontFamily="Ebrima" />
+            <TextBlock Grid.Column="2" Height="20" Focusable="False" Margin="0,25,0,220" HorizontalAlignment="Center" Text="{Binding _IPAddress}" FontFamily="Ebrima" />
+            <TextBlock Grid.Column="0" Height="20" Focusable="False" Margin="0,25,0,220" HorizontalAlignment="Center" Text="{Binding _IPAddress}" FontFamily="Ebrima" />
+
+            <TextBlock Grid.Column="0" Height="20" Focusable="False" Margin="0,25,0,180" HorizontalAlignment="Center" Text="Second PC IP" FontFamily="Ebrima" />
+            <TextBlock Grid.Column="2" Height="20" Focusable="False" Margin="0,25,0,180" HorizontalAlignment="Center" Text="Second PC IP" FontFamily="Ebrima" />
+
+            <TextBox Grid.Column="2" Name="PasswordOfController" Height="20" Width="100" Focusable="True" Margin="0,25,0,140" HorizontalAlignment="Center" Text="192.168.100.74" FontFamily="Ebrima" TextChanged="changingpassword_PasswordOfController" />
+            <TextBox Grid.Column="0" Name="PasswordOfSender" Height="20" Width="100" Focusable="True" Margin="0,25,0,140" HorizontalAlignment="Center" Text="192.168.100.74" FontFamily="Ebrima" TextChanged="changingpassword_PasswordOfSender" />
+
+            <TextBlock FontFamily="Microsoft Sans Serif" Text="connect to remote" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Center" />
+            <TextBlock FontFamily="Microsoft Sans Serif" Text="being the remote" Grid.Column="2" VerticalAlignment="Top" HorizontalAlignment="Center" />
         </Grid>
-
     </Grid>
 </Window>

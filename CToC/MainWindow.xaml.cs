@@ -1,25 +1,31 @@
 ﻿using CToC.Keyboard;
 using CToC.Mouse;
+using CToC.Screen;
 using CToC.Server;
 using Microsoft.VisualBasic.Devices;
 using System.Diagnostics;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Net;
 using System.Net.NetworkInformation;
+using System.Text;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using WindowsInput;
 using Point = System.Windows.Point;
 
 namespace CToC
 {
 
-    
+
     public partial class MainWindow : Window
     {
-        TcpServer Server =new();
+        TcpServer Server = new();
         private static IntPtr _hookID = IntPtr.Zero;
         public delegate void MouseChangeHandler(System.Windows.Point point);
 
@@ -27,9 +33,14 @@ namespace CToC
 
         public delegate void KeyPressHandler(System.Windows.Input.Key key);
         public static event KeyPressHandler? KeyPressEvent;
-        public delegate void MousePressHandler(System.Windows.Input.MouseButton mouseButton,MouseButtonState state);
+        public delegate void MousePressHandler(System.Windows.Input.MouseButton mouseButton, MouseButtonState state);
         public static event MousePressHandler? MousePressEvent;
         public static event Action? EndClientConnection;
+        private int ScreenWidth = SystemInformation.VirtualScreen.Width;
+        private int ScreenHeight = SystemInformation.VirtualScreen.Height;
+        private int ScreenX = SystemInformation.VirtualScreen.X;
+        private int ScreenY = SystemInformation.VirtualScreen.Y;
+        TakeScreenSnippit screenDisplay;
 
         public static event Action? EndServerConnection;
         public MainWindow()
@@ -39,9 +50,49 @@ namespace CToC
 
             this._IPAddress = GetIPAddress().ToString();
             TcpServer.PC2DisConnect += PC2Disconnect;
+            StartCapture();
 
-            
+        }
 
+        
+        private void StartCapture()
+        {
+            Rectangle screenrectangle = new(ScreenX, ScreenY, ScreenWidth, ScreenHeight);
+            _ = Task.Run(async () =>
+            {
+                while (true)
+                {
+                    try
+                    {
+                       var e= RecordScreen.Recordscreen(screenrectangle);
+                       var f = ConvertToImageSource(e);
+                       Dispatcher.Invoke(() => this.Imagese.Source = f);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine(ex); // don't MessageBox inside a loop
+                    }
+
+                }
+            });
+        }
+        public static BitmapImage ConvertToImageSource(System.Drawing.Image image)
+        {
+            using (var ms = new MemoryStream())
+            {
+              
+                image.Save(ms, ImageFormat.Png);
+                ms.Position = 0;
+
+                var bitmapImage = new BitmapImage();
+                bitmapImage.BeginInit();
+                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                bitmapImage.StreamSource = ms;
+                bitmapImage.EndInit();
+                bitmapImage.Freeze(); 
+
+                return bitmapImage;
+            }
         }
         public string _IPAddress { get; set; }
 
@@ -50,13 +101,13 @@ namespace CToC
             this.Close();
 
         }
-        
+
         private IPAddress GetIPAddress()
         {
             var dns = Dns.GetHostEntry(Dns.GetHostName());
-            foreach( var address in dns.AddressList) 
+            foreach (var address in dns.AddressList)
             {
-                if(address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                if (address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
                 {
                     return address;
                 }
@@ -67,14 +118,14 @@ namespace CToC
         private void changingpassword_PasswordOfSender(object sender, System.Windows.Controls.TextChangedEventArgs e)
         {
             if (this.PasswordOfSender.Text.Length > 15)
-                PasswordOfSender.Text = PasswordOfSender.Text.Substring(0,4);
-            
+                PasswordOfSender.Text = PasswordOfSender.Text.Substring(0, 4);
+
         }
 
         private void changingpassword_PasswordOfController(object sender, System.Windows.Controls.TextChangedEventArgs e)
         {
             if (this.PasswordOfController.Text.Length > 15)
-              PasswordOfController.Text = PasswordOfController.Text.Substring(0, 4);
+                PasswordOfController.Text = PasswordOfController.Text.Substring(0, 4);
         }
 
         private void PC2ToPC1Checked(object sender, RoutedEventArgs e)
@@ -104,7 +155,7 @@ namespace CToC
             IPAddress ipofpc1 = IPAddress.Parse(_IPAddress);
             IPAddress ipofpc2 = IPAddress.Parse(this.PasswordOfSender.Text);
 
-            if (btn != null&& btn.IsChecked == true )
+            if (btn != null && btn.IsChecked == true)
             {
                 Server?.Sender(ipofpc1, ipofpc2);
             }
@@ -118,10 +169,10 @@ namespace CToC
 
 
 
-        private  Point GetMousePosInDpi(Point MousePoint)
+        private Point GetMousePosInDpi(Point MousePoint)
         {
- 
-         
+
+
             //mousepos in DPI
             PresentationSource source = PresentationSource.FromVisual(this);
             Matrix transform = source.CompositionTarget.TransformFromDevice;
@@ -137,7 +188,7 @@ namespace CToC
         {
 
             Point portionInFram = PortionOfCursorInPC2Fram();
-            
+
             MouseChange?.Invoke(portionInFram);
 
         }
@@ -145,18 +196,18 @@ namespace CToC
         private Point PortionOfCursorInPC2Fram()
         {
             var Mousepos = Mouse.MousePosition.GetCursorPosition();
-            
+
             //the point in the fram 
             var point = this.PC2Fram.PointFromScreen(Mousepos);
-            
+
             Point ABSpointofthefram = new(0, 0);
 
             var Width = this.PC2Fram.ActualWidth;
             var height = this.PC2Fram.ActualHeight;
-            
+
             var PercentofXfarFromTheABS = ((point.X - ABSpointofthefram.X) / Width) * 100;
             var PercentofYfarFromTheABS = ((point.Y - ABSpointofthefram.Y) / height) * 100;
-            
+
             return new(PercentofXfarFromTheABS, PercentofYfarFromTheABS);
         }
 
@@ -177,14 +228,19 @@ namespace CToC
 
         private void PC2Fram_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
-              if(this.PC2Fram.IsMouseOver==true)
-              KeyPressEvent?.Invoke(e.Key);
+            if (this.PC2Fram.IsMouseOver == true)
+                KeyPressEvent?.Invoke(e.Key);
         }
 
         private void Window_Closed(object sender, EventArgs e)
         {
             //EndClientConnection?.Invoke();
             //EndServerConnection?.Invoke();
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

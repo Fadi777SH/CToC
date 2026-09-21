@@ -1,4 +1,6 @@
-﻿using Microsoft.VisualBasic.Devices;
+﻿using CToC.Mouse;
+using CToC.Screen;
+using Microsoft.VisualBasic.Devices;
 using System.Diagnostics;
 using System.Globalization;
 using System.Net;
@@ -9,6 +11,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Threading;
 using WindowsInput;
 using Point = System.Windows.Point;
 namespace CToC.Server
@@ -19,6 +22,8 @@ namespace CToC.Server
         InputSimulator? inputsime;
         Socket? Client;
         int PORT = 22;
+        private int ScreenX = SystemInformation.VirtualScreen.X;
+        private int ScreenY = SystemInformation.VirtualScreen.Y;
         public static event Action? PC2DisConnect;
         private bool ServerShotDown = false;
         private bool ClientShotDown = false;
@@ -31,7 +36,11 @@ namespace CToC.Server
         {
             if (Accept?.Connected == true) return;
             Accept = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            Accept.Bind(new IPEndPoint(IPAddressOfPC1,PORT));
             endPoint = new IPEndPoint(IPAddressOfPC2, PORT);
+
+
+            CaptureScreenFromClient(endPoint);
 
             new Thread(async delegate ()
             {
@@ -78,7 +87,12 @@ namespace CToC.Server
             Client.Bind(new IPEndPoint(IPAddressOfPC1, PORT));
 
             var Serverendpint = new IPEndPoint(IPAddressOfPC2,PORT);
-        
+
+
+
+            SendScreenFromClient(Serverendpint);
+
+
             while (true)
             {
 
@@ -106,7 +120,7 @@ namespace CToC.Server
                         double absY = (MSG.point.Y) * (65535.0 / vHeight);
                         var P = GetPC2MousePos(MSG.point);
                         //inputsime.Mouse.MoveMouseTo(absX, absY);
-                        SetCursorPos((int)P.X,(int)P.Y);
+                        MousePosition.SetCursorPos((int)P.X,(int)P.Y);
                     }
                     else if (MSG.type == MessageType.MouseChange)
                     {
@@ -133,8 +147,7 @@ namespace CToC.Server
                 }
             }
         }
-        [DllImport("user32.dll")]
-        static extern bool SetCursorPos(int x, int y);
+
 
         
         enum MessageType
@@ -263,6 +276,50 @@ namespace CToC.Server
         {
            // if (Client != null)
                // Client.Close();
+        }
+        private void SendScreenFromClient(EndPoint Serverendpint)
+        {
+            Rectangle screenrectangle = new(ScreenX, ScreenY, ScreenWidth, ScreenHeight);
+            _ = Task.Run(async () =>
+            {
+                while (true)
+                {
+                    try
+                    {
+                        var Bitmap = RecordScreen.Recordscreen(screenrectangle);
+                        var bytes = RecordScreen.BitmapTobyteConverter(Bitmap); 
+                        Client?.SendToAsync(bytes,Serverendpint);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine(ex); // don't MessageBox inside a loop
+                    }
+
+                }
+            });
+        }
+        private void CaptureScreenFromClient(EndPoint Serverendpint)
+        {
+            Rectangle screenrectangle = new(ScreenX, ScreenY, ScreenWidth, ScreenHeight);
+            _ = Task.Run(async () =>
+            {
+                while (true)
+                {
+                    try
+                    {
+
+                        var bytes = new byte[255];
+                        var Size = await Accept.ReceiveFromAsync(bytes, Serverendpint);
+                        Array.Resize(ref bytes, Size.ReceivedBytes);
+
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine(ex); // don't MessageBox inside a loop
+                    }
+
+                }
+            });
         }
     }
 }
