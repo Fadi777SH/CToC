@@ -50,7 +50,7 @@ namespace CToC
 
             this._IPAddress = GetIPAddress().ToString();
             TcpServer.PC2DisConnect += PC2Disconnect;
-            TcpServer.SingleFram += StartCapture;
+            CaptureScreenFromClient();
 
         }
 
@@ -71,6 +71,7 @@ namespace CToC
             }
 
         }
+
         public static BitmapImage ConvertToImageSource(System.Drawing.Image image)
         {
             using (var ms = new MemoryStream())
@@ -88,6 +89,26 @@ namespace CToC
 
                 return bitmapImage;
             }
+        }
+        private void CaptureScreenFromClient()
+        {
+            Rectangle screenrectangle = new(ScreenX, ScreenY, ScreenWidth, ScreenHeight);
+            _ = Task.Run(async () =>
+            {
+                while (true)
+                {
+                    try
+                    {
+                        TcpServer.SingleFram += StartCapture;
+
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine(ex); // don't MessageBox inside a loop
+                    }
+
+                }
+            });
         }
         public string _IPAddress { get; set; }
 

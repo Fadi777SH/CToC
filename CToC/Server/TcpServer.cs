@@ -94,18 +94,18 @@ namespace CToC.Server
 
 
 
-            SendScreenFromClient(Serverendpint);
-
 
             while (true)
             {
 
+
+                
                 byte[] RecievedByte = new byte[255];
                 try
                 {
                     MainWindow.EndClientConnection += disconnectClient;
                     await Client.ReceiveFromAsync(RecievedByte,Serverendpint);
-                    
+                    SendScreenFromClient(Serverendpint);
                     TCPMessage MSG = fromBytes(RecievedByte);
                     if (MSG.type == MessageType.Keyboard)
                     {
@@ -286,13 +286,13 @@ namespace CToC.Server
             Rectangle screenrectangle = new(ScreenX, ScreenY, ScreenWidth, ScreenHeight);
             _ = Task.Run(async () =>
             {
-                while (true)
+                
                 {
                     try
                     {
                         var Bitmap = RecordScreen.Recordscreen(screenrectangle);
                         var bytes = RecordScreen.BitmapTobyteConverter(Bitmap); 
-                        Client?.SendToAsync(bytes,Serverendpint);
+                        await Client?.SendToAsync(bytes,Serverendpint);
                     }
                     catch (Exception ex)
                     {
@@ -307,13 +307,13 @@ namespace CToC.Server
             Rectangle screenrectangle = new(ScreenX, ScreenY, ScreenWidth, ScreenHeight);
             _ = Task.Run(async () =>
             {
-                while (true)
+               
                 {
                     try
                     {
 
                         var bytes = new byte[255];
-                        var Size = await Accept.ReceiveFromAsync(bytes, Serverendpint);
+                        var Size = await Accept?.ReceiveFromAsync(bytes, Serverendpint);
                         Array.Resize(ref bytes, Size.ReceivedBytes);
                         SingleFram?.Invoke(bytes);
 
