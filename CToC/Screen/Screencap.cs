@@ -145,79 +145,150 @@ namespace CToC.Screen
             
         }
 
-        public static void Skra(ref byte[] bytes , ref int width , ref int height)
+        public static void Skra(ref byte[] bytes, ref int width, ref int height)
         {
-            D3D11.D3D11CreateDevice(null, DriverType.Hardware, DeviceCreationFlags.BgraSupport,
-                null, out Vortice.Direct3D11.ID3D11Device device, out Vortice.Direct3D11.ID3D11DeviceContext context);
-
-            using var dxgiDevice = device.QueryInterface<IDXGIDevice>();
-            using var adapter = dxgiDevice.GetAdapter();
-
-            adapter.EnumOutputs(0, out IDXGIOutput output);
-            using var output1 = output.QueryInterface<IDXGIOutput1>();
-            using var duplication = output1.DuplicateOutput(device);
-            output.Dispose();
-
+            Vortice.Direct3D11. ID3D11Device device = null;
+            Vortice.Direct3D11.ID3D11DeviceContext context = null;
+            IDXGIAdapter adapter = null;
+            IDXGIOutput output = null;
+            IDXGIOutput1 output1 = null;
+            IDXGIOutputDuplication duplication = null;
             Vortice.Direct3D11.ID3D11Texture2D staging = null;
-            Texture2DDescription stagingDesc = default;
 
-            var result = duplication.AcquireNextFrame(500, out var frameInfo, out var desktopResource);
-            if (result.Failure)
-                 // timeout or no new frame yet
-
-            using (desktopResource)
+            try
             {
-                using var texture = desktopResource.QueryInterface<Vortice.Direct3D11.ID3D11Texture2D>();
+                D3D11.D3D11CreateDevice(
+                    null,
+                    DriverType.Hardware,
+                    DeviceCreationFlags.BgraSupport,
+                    null,
+                    out device,
+                    out context);
 
-                // Create the staging texture once (or if size changed)
-                var desc = texture.Description;
-                if (staging == null || stagingDesc.Width != desc.Width || stagingDesc.Height != desc.Height)
+                using (var dxgiDevice = device.QueryInterface<IDXGIDevice>())
                 {
-                    staging?.Dispose();
-
-                    desc.Usage = ResourceUsage.Staging;
-                    desc.CPUAccessFlags = CpuAccessFlags.Read;
-                    desc.BindFlags = BindFlags.None;
-                    desc.MiscFlags = ResourceOptionFlags.None;
-
-                    staging = device.CreateTexture2D(desc);
-                    stagingDesc = desc;
+                    adapter = dxgiDevice.GetAdapter();
                 }
 
-                context.CopyResource(staging, texture);
+                adapter.EnumOutputs(0, out output);
 
-                var map = context.Map(staging, 0, MapMode.Read, Vortice.Direct3D11.MapFlags.None);
+                output1 = output.QueryInterface<IDXGIOutput1>();
 
-                width = (int)stagingDesc.Width;
-                 height = (int)stagingDesc.Height;
-                int bytesPerPixel = 4; // BGRA8
-                var frameBytes = new byte[width * height * bytesPerPixel];
+                duplication = output1.DuplicateOutput(device);
 
-                unsafe
+                bool frameAcquired = false;
+
+                try
                 {
-                    byte* src = (byte*)map.DataPointer;
-                    fixed (byte* dstPtr = frameBytes)
+                    var result = duplication.AcquireNextFrame(
+                        300,
+                        out var frameInfo,
+                        out var desktopResource);
+
+                    if (result.Failure)
                     {
-                        byte* dst = dstPtr;
-                        for (int row = 0; row < height; row++)
+                        // No new frame.
+                        return;
+                    }
+
+                    frameAcquired = true;
+
+                    using (desktopResource)
+                    using (var texture =
+                        desktopResource.QueryInterface<Vortice.Direct3D11.ID3D11Texture2D>())
+                    {
+                        var desc = texture.Description;
+
+                        width = (int)desc.Width;
+                        height = (int)desc.Height;
+
+                        // ---------------------------------------------
+                        // Create staging texture
+                        // ---------------------------------------------
+
+                        var stagingDesc = desc;
+
+                        stagingDesc.Usage = ResourceUsage.Staging;
+                        stagingDesc.CPUAccessFlags = CpuAccessFlags.Read;
+                        stagingDesc.BindFlags = BindFlags.None;
+                        stagingDesc.MiscFlags = ResourceOptionFlags.None;
+
+                        staging = device.CreateTexture2D(stagingDesc);
+
+                        // ---------------------------------------------
+                        // GPU -> CPU staging texture
+                        // ---------------------------------------------
+
+                        context.CopyResource(staging, texture);
+
+                        var map = context.Map(
+                            staging,
+                            0,
+                            MapMode.Read,
+                            Vortice.Direct3D11.MapFlags.None);
+
+                        try
                         {
-                            Buffer.MemoryCopy(
-                                src + row * map.RowPitch,
-                                dst + row * width * bytesPerPixel,
-                                width * bytesPerPixel,
-                                width * bytesPerPixel);
+                            const int bytesPerPixel = 4;
+
+                            int rowSize = width * bytesPerPixel;
+                            int totalSize = rowSize * height;
+
+                            // This is the important part:
+                            // bytes now becomes the actual frame buffer.
+                            if (bytes == null || bytes.Length != totalSize)
+                            {
+                                bytes = new byte[totalSize];
+                            }
+
+                            unsafe
+                            {
+                                byte* src = (byte*)map.DataPointer;
+
+                                fixed (byte* dstPtr = bytes)
+                                {
+                                    byte* dst = dstPtr;
+
+                                    for (int row = 0; row < height; row++)
+                                    {
+                                        Buffer.MemoryCopy(
+                                            src + (row * map.RowPitch),
+                                            dst + (row * rowSize),
+                                            rowSize,
+                                            rowSize);
+                                    }
+                                }
+                            }
+                        }
+                        finally
+                        {
+                            context.Unmap(staging, 0);
                         }
                     }
                 }
+                finally
+                {
+                    if (frameAcquired)
+                    {
+                        duplication.ReleaseFrame();
+                    }
+                }
+            }
+            finally
+            {
+                // Dispose everything we created.
 
-                context.Unmap(staging, 0);
-                bytes = frameBytes;
-                //OnFrameCaptured(frameBytes, width, height);
-                
-
-                duplication.ReleaseFrame();
+                staging?.Dispose();
+                duplication?.Dispose();
+                output1?.Dispose();
+                output?.Dispose();
+                adapter?.Dispose();
+                context?.Dispose();
+                device?.Dispose();
             }
         }
+
+        
 
         static public void OnFrameCaptured(byte[] frambyte , int width , int height)
         {
