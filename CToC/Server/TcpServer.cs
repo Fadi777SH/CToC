@@ -55,11 +55,15 @@ namespace CToC.Server
                     MainWindow.MouseChange += MouseChangepos;
                     MainWindow.MousePressEvent += MousePressedDown;
                     byte[] re = new byte[255];
-                    await Accept.ReceiveFromAsync(re, endPoint);
-                    TCPMessage MSG = fromBytes(re);
-                    if (MSG.type == MessageType.Fram)
+                    while (true)
                     {
-
+                        await Accept.ReceiveFromAsync(re, endPoint);
+                       
+                        if (re!=null)
+                        {
+                           
+                            SingleFram?.Invoke(re);
+                        }
                     }
                 }
                 catch
@@ -162,8 +166,8 @@ namespace CToC.Server
                     int h = 0;
                     ScreenTarge.Skra(ref e, ref w, ref h);
                     
-                    FrameMessage(ref store, e, w, h);
-                    await Client.SendToAsync(store, Serverendpint);
+                   
+                    await Client.SendToAsync(e, Serverendpint);
 
                 }
                 catch(Exception ex)

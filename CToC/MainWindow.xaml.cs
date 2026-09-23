@@ -62,9 +62,9 @@ namespace CToC
 
             try
             {
-                var e = RecordScreen.ByteToBitmMap(bytes);      
-                var f = ConvertToImageSource(e);
-                Dispatcher.Invoke(() => this.Imagese.Source = f);
+                var f = ScreenTarge.BytesToBitmap(bytes, 1080, 1920);
+                var G = ConvertToImageSource(f);
+                Dispatcher.Invoke(() => this.Imagese.Source = G);
             }
             catch (Exception ex)
             {
