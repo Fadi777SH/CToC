@@ -12,6 +12,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
+using Vortice.Mathematics.PackedVector;
 using WindowsInput;
 using Point = System.Windows.Point;
 namespace CToC.Server
@@ -27,7 +28,7 @@ namespace CToC.Server
        
         public static event Action? PC2DisConnect;
         private bool ServerShotDown = false;
-        private bool ClientShotDown = false;
+        //private bool ClientShotDown = false;
         int ScreenWidth = SystemInformation.VirtualScreen.Width;
         int ScreenHeight = SystemInformation.VirtualScreen.Height;
         EndPoint endPoint;
@@ -53,7 +54,13 @@ namespace CToC.Server
                     MainWindow.KeyPressEvent += PressThisKey;
                     MainWindow.MouseChange += MouseChangepos;
                     MainWindow.MousePressEvent += MousePressedDown;
-;
+                    byte[] re = new byte[255];
+                    await Accept.ReceiveFromAsync(re, endPoint);
+                    TCPMessage MSG = fromBytes(re);
+                    if (MSG.type == MessageType.Fram)
+                    {
+
+                    }
                 }
                 catch
                 {
@@ -68,19 +75,7 @@ namespace CToC.Server
                 
             }.Start();
 
-            while (true)
-            {
-                byte[] rcc = new byte[255];
-                try
-                {
-                    await Accept.ReceiveFromAsync(rcc, endPoint);
-                    SingleFram?.Invoke(rcc);
-                }
-                catch
-                {
 
-                }
-            }
 
             MainWindow.KeyPressEvent -= PressThisKey;
             MainWindow.MouseChange -= MouseChangepos;
@@ -160,17 +155,22 @@ namespace CToC.Server
                             }
                         }
                     }
-                    var Bitmap = RecordScreen.Recordscreen(screenrectangle);
-                    var bytes = RecordScreen.BitmapTobyteConverter(Bitmap);
-                   
-                    Debug.WriteLine(bytes.Length);
-                    if (Client != null)
-                        await Client.SendToAsync(bytes, Serverendpint);
+
+                    byte[] store = new byte[255];
+                    byte[] e = new byte[255];
+                    int w = 0;
+                    int h = 0;
+                    ScreenTarge.Skra(ref e, ref w, ref h);
+                    
+                    FrameMessage(ref store, e, w, h);
+                    await Client.SendToAsync(store, Serverendpint);
+
                 }
                 catch(Exception ex)
                 {
                     System.Windows.MessageBox.Show(ex.Message);
                 }
+
             }
         }
 
@@ -181,16 +181,18 @@ namespace CToC.Server
             Keyboard,
             MouseChange,
             point ,
-            MouseWheel
+            MouseWheel,
+            Fram,
         }
-        struct TCPMessage
+        struct  TCPMessage
         {
             public MessageType type;
             public Key key;
             public System.Windows.Input.MouseButton MouseSide;
             public System.Windows.Point point;
-
-            
+            public int Width;
+            public int Height;
+            public byte[] FramByte;
             public MouseButtonState mousestate;
 
         };
@@ -249,6 +251,18 @@ namespace CToC.Server
             if (Accept !=null&& ServerShotDown==false)
             await Accept.SendToAsync(bytes,endPoint);
         }
+
+        public  void FrameMessage(ref byte[] StoreByte ,byte[] bytes,int w,int h)
+        {
+            TCPMessage MSG = new();
+            MSG.type = MessageType.Fram;
+
+            MSG.Width = w;
+            MSG.Height = h;
+            MSG.FramByte = bytes;
+            var send = getBytesOfTCPMessage(MSG);
+            send = StoreByte;
+        }
         public async void MouseChangepos(System.Windows.Point portion)
         {
 
@@ -302,36 +316,6 @@ namespace CToC.Server
         {
            // if (Client != null)
                // Client.Close();
-        }
-        private async void SendScreenFromClient(EndPoint Serverendpint)
-        {
-            Rectangle screenrectangle = new(ScreenX, ScreenY, ScreenWidth, ScreenHeight);
-                
-            try
-            {
-
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex); // don't MessageBox inside a loop
-            }
-
-        }
-        private async void CaptureScreenFromClient(EndPoint Serverendpint)
-        {
-            Rectangle screenrectangle = new(ScreenX, ScreenY, ScreenWidth, ScreenHeight);
-
-            {
-
-                var bytes = new byte[255];
-                var Size = await Accept?.ReceiveFromAsync(bytes, Serverendpint);
-                Array.Resize(ref bytes, Size.ReceivedBytes);
-                SingleFram?.Invoke(bytes);
-
-            }
-
-
-
         }
     
     }

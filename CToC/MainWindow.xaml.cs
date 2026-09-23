@@ -16,6 +16,7 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Windows.Graphics;
 using WindowsInput;
 using Point = System.Windows.Point;
 
@@ -47,7 +48,7 @@ namespace CToC
         {
             InitializeComponent();
             DataContext = this;
-
+            
             this._IPAddress = GetIPAddress().ToString();
             TcpServer.PC2DisConnect += PC2Disconnect;
             CaptureScreenFromClient();
