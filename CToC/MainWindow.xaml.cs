@@ -2,35 +2,52 @@
 using CToC.Mouse;
 using CToC.Screen;
 using CToC.Server;
+using DevExpress.DirectX.NativeInterop.DXGI;
+using DevExpress.DirectX.StandardInterop.Direct3D;
+using DevExpress.Utils.Filtering;
 using Microsoft.VisualBasic.Devices;
 using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Net;
 using System.Net.NetworkInformation;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Vortice.Mathematics;
 using Windows.Graphics;
+using Windows.Graphics.Capture;
+using Windows.Graphics.DirectX;
+using Windows.Graphics.DirectX.Direct3D11;
+using Windows.Media.Capture;
+using Windows.System;
+using Windows.UI.Composition;
 using WindowsInput;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 using Point = System.Windows.Point;
 
 namespace CToC
 {
 
 
-    public partial class MainWindow : Window
+    public partial class MainWindow :System.Windows.Window
     {
         TcpServer Server = new();
         private static IntPtr _hookID = IntPtr.Zero;
         public delegate void MouseChangeHandler(System.Windows.Point point);
 
         public static event MouseChangeHandler? MouseChange;
+
+        public  DispatcherQueue _dispatcherQueue;
 
         public delegate void KeyPressHandler(System.Windows.Input.Key key);
         public static event KeyPressHandler? KeyPressEvent;
@@ -42,20 +59,65 @@ namespace CToC
         private int ScreenX = SystemInformation.VirtualScreen.X;
         private int ScreenY = SystemInformation.VirtualScreen.Y;
         TakeScreenSnippit screenDisplay;
-
+        private IntPtr Handle;
+    
+        
         public static event Action? EndServerConnection;
         public MainWindow()
         {
+
             InitializeComponent();
             DataContext = this;
-            
-            this._IPAddress = GetIPAddress().ToString();
-            TcpServer.PC2DisConnect += PC2Disconnect;
+
             CaptureScreenFromClient();
+            FrameCapture capturedFrame = new();
+            
+
+            this._IPAddress = GetIPAddress().ToString();
+
+
+            Handle = new WindowInteropHelper(this).Handle;
+
+
+            //cap._visual =Windows.UI.Composition.Visual.FromAbi(Handle);
+
+            TcpServer.PC2DisConnect += PC2Disconnect;
+
+            new Task(async () =>
+            {
+                while (true)
+                {
+                    await capturedFrame.Stream();
+                    Thread.Sleep(60);
+                }
+            }).Start();
 
         }
+        private async void run()
+        {
+            using var sharpDxDevice = new SharpDX.Direct3D11.Device(SharpDX.Direct3D.DriverType.Hardware, 
+                SharpDX.Direct3D11.DeviceCreationFlags.BgraSupport);
+            IDirect3DDevice direct3dDevice = CaptureInterop.CreateDirect3DDeviceFromSharpDXDevice2(sharpDxDevice);
+            DispatcherQueueController dispatcherQueueController = DispatcherQueueController.CreateOnDedicatedThread();
 
-        
+
+
+            dispatcherQueueController.DispatcherQueue.TryEnqueue(() =>
+                {
+                    Compositor compositor = new();
+                    var VS = compositor.CreateSpriteVisual();
+                    VS.Size = new System.Numerics.Vector2(30, 30);
+                    var item = GraphicsCaptureItem.CreateFromVisual(VS);
+                    
+
+                    var f = Direct3D11CaptureFramePool.Create(direct3dDevice, DirectXPixelFormat.B8G8R8A8UIntNormalized, 2, item.Size);
+
+                });
+           
+
+
+
+        }
         public async void StartCapture(byte[] bytes)
         {
             Rectangle screenrectangle = new(ScreenX, ScreenY, ScreenWidth, ScreenHeight);
@@ -63,10 +125,6 @@ namespace CToC
             try
             {
                 Debug.WriteLine(bytes.Length);
-                var f = ScreenTarge.BytesToBitmap(bytes, 300, 300);
-                var G = ConvertToImageSource(f);
-               
-                Dispatcher?.Invoke(() => this.Imagese.Source = G);
             }
             catch (Exception ex)
             {

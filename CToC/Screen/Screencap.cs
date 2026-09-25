@@ -1,24 +1,26 @@
 ﻿using DevExpress.DirectX.Common.Direct3D;
 using DevExpress.DirectX.StandardInterop.Direct3D;
+using SharpGen.Runtime;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Net;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Windows.Media.Animation;
-using Vortice.DXGI;
-using Vortice.Direct3D11;
-using Vortice.Direct3D;
-using Windows.Devices.Display.Core;
 using Windows.Graphics;
+using Windows.Graphics.Capture;
+using Windows.Graphics.DirectX;
 using Windows.Graphics.DirectX.Direct3D11;
+using Windows.System;
+using Windows.UI.Composition;
+
 namespace CToC.Screen
 {
-
+    
     public class TakeScreenSnippit
     {
         [DllImport("user32.dll")]
@@ -106,219 +108,126 @@ namespace CToC.Screen
             }
         }
     }
-
-
-
-    public class ScreenTarge
+    public class FrameCapture
     {
-        DisplayTarget? displayTarget;
-        DisplayTask? displayTask;
-        DisplayTaskPool? DisplayTaskPool;
-        DisplaySource? displaySource;
-        DisplaySurface? displaySurface;
-        DisplayAdapter? displayAdapter;
-        DisplayManager? displayManager;
-        public  DisplayTarget? GetDisplayTargets()
+        int ScreenWidth = SystemInformation.VirtualScreen.Width;
+        int ScreenHeight = SystemInformation.VirtualScreen.Height;
+        int ABSX = SystemInformation.VirtualScreen.X;
+        int ABSY = SystemInformation.VirtualScreen.Y;
+        private Windows.UI.Composition.Visual _Visual;
+        private GraphicsCaptureItem _captureItem;
+        private GraphicsCaptureSession _graphicsCaptureSession;
+        private Direct3D11CaptureFrame _direct3D11Capture;
+        private Direct3D11CaptureFramePool _direct3D11CaptureFramePool;
+        
+        private Task<Windows.UI.Composition.ContainerVisual> GetVisual()
         {
-            displayManager = DisplayManager.Create(DisplayManagerOptions.None);
-            foreach(var dev in displayManager.GetCurrentTargets())
+            var dispatcherQueueHandler = DispatcherQueueController.CreateOnDedicatedThread();
+
+            Windows.UI.Composition.ContainerVisual VS;
+            var tcs = new TaskCompletionSource<ContainerVisual>(
+                     TaskCreationOptions.RunContinuationsAsynchronously);
+
+            dispatcherQueueHandler.DispatcherQueue.TryEnqueue(() =>
             {
-                if (dev != null) return dev;
-            }
-            return null;
+                //ToDO -> you should get the optimal visual of the windows 
+                var Com = new Windows.UI.Composition.Compositor();
+                VS = Com.CreateContainerVisual();
+                tcs.SetResult(VS);
+                
+            });
+            //if (false)
+                //tcs.SetException(new InvalidOperationException("Dispatcher queue is shut down."));
+
+            return tcs.Task;
         }
-
-        public void RunTask()
+        private IDirect3DDevice GetDirectdevice()
         {
-            var Des = GetDescription();
-            displayTarget = GetDisplayTargets();
-            var ID = displayTarget?.Adapter.Id;
-            displayAdapter = displayTarget?.Adapter;
-            var displayDev = displayManager?.CreateDisplayDevice(displayAdapter);
-            displaySurface = displayDev?.CreatePrimary(displayTarget, Des);
-            DisplayTaskPool = displayDev?.CreateTaskPool();
-            displayTask = DisplayTaskPool?.CreateTask();
-            displaySource = displayDev?.CreateScanoutSource(displayTarget);
-            var scanout = displayDev?.CreateSimpleScanout(displaySource, displaySurface, 1, 0);
-            displayTask?.SetScanout(scanout);
-            DisplayTaskPool?.ExecuteTask(displayTask);
-            
+            using var sharpDxDevice = new SharpDX.Direct3D11.Device(SharpDX.Direct3D.DriverType.Hardware,
+                                                     SharpDX.Direct3D11.DeviceCreationFlags.BgraSupport);
+            var D = CaptureInterop.CreateDirect3DDeviceFromSharpDXDevice2(sharpDxDevice);
+            return D;
         }
+        private DispatcherQueueController dispatcherQueueController;
 
-        public static void Skra(ref byte[] bytes, ref int width, ref int height)
+        private static Lazy<IDirect3DDevice> device;
+        private IDirect3DDevice dev => GetDirectdevice();
+        private DirectXPixelFormat Format = DirectXPixelFormat.B8G8R8A8UIntNormalized;
+
+        public  async  Task Stream()
         {
-            Vortice.Direct3D11. ID3D11Device device = null;
-            Vortice.Direct3D11.ID3D11DeviceContext context = null;
-            IDXGIAdapter adapter = null;
-            IDXGIOutput output = null;
-            IDXGIOutput1 output1 = null;
-            IDXGIOutputDuplication duplication = null;
-            Vortice.Direct3D11.ID3D11Texture2D staging = null;
 
-            try
+           dispatcherQueueController = DispatcherQueueController.CreateOnDedicatedThread();
+           
+
+            dispatcherQueueController.DispatcherQueue.TryEnqueue(() =>
             {
-                D3D11.D3D11CreateDevice(
-                    null,
-                    DriverType.Hardware,
-                    DeviceCreationFlags.BgraSupport,
-                    null,
-                    out device,
-                    out context);
-
-                using (var dxgiDevice = device.QueryInterface<IDXGIDevice>())
+                var Com = new Windows.UI.Composition.Compositor();
+                if (Com != null)
                 {
-                    adapter = dxgiDevice.GetAdapter();
+                    _Visual = Com.CreateContainerVisual();
+                    _Visual.Size = new System.Numerics.Vector2(ScreenWidth, ScreenHeight);
+
                 }
 
-                adapter.EnumOutputs(0, out output);
+                if (_Visual != null)
+                {
+                    _captureItem = GraphicsCaptureItem.CreateFromVisual(_Visual);
+                    
+                }
 
-                output1 = output.QueryInterface<IDXGIOutput1>();
-
-                duplication = output1.DuplicateOutput(device);
-
-                bool frameAcquired = false;
 
                 try
                 {
-                    var result = duplication.AcquireNextFrame(
-                        300,
-                        out var frameInfo,
-                        out var desktopResource);
 
-                    if (result.Failure)
-                    {
-                        // No new frame.
-                        return;
-                    }
 
-                    frameAcquired = true;
 
-                    using (desktopResource)
-                    using (var texture =
-                        desktopResource.QueryInterface<Vortice.Direct3D11.ID3D11Texture2D>())
-                    {
-                        var desc = texture.Description;
+                    _direct3D11CaptureFramePool = Direct3D11CaptureFramePool.Create(dev, Format, 1, new(ScreenWidth, ScreenHeight));
 
-                        width = (int)desc.Width;
-                        height = (int)desc.Height;
+       
+                    _graphicsCaptureSession = _direct3D11CaptureFramePool.CreateCaptureSession(_captureItem);
+                       
+                    
+                    
+                    
+                    _direct3D11CaptureFramePool.FrameArrived += _direct3D11CaptureFramePool_FrameArrived;
+                    _graphicsCaptureSession.StartCapture();
 
-                        // ---------------------------------------------
-                        // Create staging texture
-                        // ---------------------------------------------
+                   
 
-                        var stagingDesc = desc;
-
-                        stagingDesc.Usage = ResourceUsage.Staging;
-                        stagingDesc.CPUAccessFlags = CpuAccessFlags.Read;
-                        stagingDesc.BindFlags = BindFlags.None;
-                        stagingDesc.MiscFlags = ResourceOptionFlags.None;
-
-                        staging = device.CreateTexture2D(stagingDesc);
-
-                        // ---------------------------------------------
-                        // GPU -> CPU staging texture
-                        // ---------------------------------------------
-
-                        context.CopyResource(staging, texture);
-
-                        var map = context.Map(
-                            staging,
-                            0,
-                            MapMode.Read,
-                            Vortice.Direct3D11.MapFlags.None);
-
-                        try
-                        {
-                            const int bytesPerPixel = 4;
-
-                            int rowSize = width * bytesPerPixel;
-                            int totalSize = rowSize * height;
-
-                            // This is the important part:
-                            // bytes now becomes the actual frame buffer.
-                            if (bytes == null || bytes.Length != totalSize)
-                            {
-                                bytes = new byte[totalSize];
-                            }
-
-                            unsafe
-                            {
-                                byte* src = (byte*)map.DataPointer;
-
-                                fixed (byte* dstPtr = bytes)
-                                {
-                                    byte* dst = dstPtr;
-
-                                    for (int row = 0; row < height; row++)
-                                    {
-                                        Buffer.MemoryCopy(
-                                            src + (row * map.RowPitch),
-                                            dst + (row * rowSize),
-                                            rowSize,
-                                            rowSize);
-                                    }
-                                }
-                            }
-                        }
-                        finally
-                        {
-                            context.Unmap(staging, 0);
-                        }
-                    }
+                }
+                catch(COMException ex)
+                {
+                    System.Windows.MessageBox.Show(ex.Message);
                 }
                 finally
                 {
-                    if (frameAcquired)
-                    {
-                        duplication.ReleaseFrame();
-                    }
+
+                    if (_graphicsCaptureSession != null)
+                        _graphicsCaptureSession.Dispose();
+
+                    if (_direct3D11CaptureFramePool != null)
+                        _direct3D11CaptureFramePool.Dispose();
+
+                    if (_direct3D11Capture != null)
+                        _direct3D11Capture.Dispose();
+                    _direct3D11CaptureFramePool?.FrameArrived -= _direct3D11CaptureFramePool_FrameArrived;
                 }
-            }
-            finally
+            });
+            
+
+        }
+
+        private void _direct3D11CaptureFramePool_FrameArrived(Direct3D11CaptureFramePool sender, object args)
+        {
+
+            var frame =sender.TryGetNextFrame();
+            if (frame != null)
             {
-                // Dispose everything we created.
-
-                staging?.Dispose();
-                duplication?.Dispose();
-                output1?.Dispose();
-                output?.Dispose();
-                adapter?.Dispose();
-                context?.Dispose();
-                device?.Dispose();
+                var Surface = frame.Surface;
+                
             }
         }
-
-        
-
-        static public void OnFrameCaptured(byte[] frambyte , int width , int height)
-        {
-
-        }
-        static public Bitmap BytesToBitmap(byte[] frameBytes, int width, int height)
-        {
-            var bmp = new Bitmap(width, height, PixelFormat.Format32bppArgb);
-            var rect = new Rectangle(0, 0, width, height);
-            var bmpData = bmp.LockBits(rect, ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
-
-            System.Runtime.InteropServices.Marshal.Copy(frameBytes, 0, bmpData.Scan0, frameBytes.Length);
-
-            bmp.UnlockBits(bmpData);
-            return bmp;
-        }
-        public static DisplayPrimaryDescription GetDescription()
-        {
-            Direct3DMultisampleDescription noMsaa = new(1, 0);
-
-            DisplayPrimaryDescription description = new(
-                1920, 1080,
-                Windows.Graphics.DirectX.DirectXPixelFormat.B8G8R8A8UIntNormalized,
-                Windows.Graphics.DirectX.DirectXColorSpace.RgbFullG22NoneP709,
-                false,
-                noMsaa);
-            return description;
-        }
-
-
     }
 }
 

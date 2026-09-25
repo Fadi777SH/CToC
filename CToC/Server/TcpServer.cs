@@ -54,6 +54,8 @@ namespace CToC.Server
                     MainWindow.KeyPressEvent += PressThisKey;
                     MainWindow.MouseChange += MouseChangepos;
                     MainWindow.MousePressEvent += MousePressedDown;
+
+
                     byte[] re = new byte[255];
                     while (true)
                     {
@@ -159,15 +161,6 @@ namespace CToC.Server
                             }
                         }
                     }
-
-                    byte[] store = new byte[255];
-                    byte[] e = new byte[255];
-                    int w = 0;
-                    int h = 0;
-                    ScreenTarge.Skra(ref e, ref w, ref h);
-                    
-                   
-                    await Client.SendToAsync(e, Serverendpint);
 
                 }
                 catch(Exception ex)
