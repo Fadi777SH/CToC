@@ -1,9 +1,11 @@
 ﻿using DevExpress.DirectX.Common.Direct3D;
 using DevExpress.DirectX.StandardInterop.Direct3D;
+using SharpDX.Direct3D11;
 using SharpGen.Runtime;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Configuration.Internal;
 using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.Drawing.Imaging;
@@ -11,6 +13,8 @@ using System.IO;
 using System.Net;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
+using Windows.Devices.PointOfService.Provider;
+using Windows.Gaming.Input.ForceFeedback;
 using Windows.Graphics;
 using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX;
@@ -20,7 +24,7 @@ using Windows.UI.Composition;
 
 namespace CToC.Screen
 {
-    
+
     public class TakeScreenSnippit
     {
         [DllImport("user32.dll")]
@@ -108,19 +112,40 @@ namespace CToC.Screen
             }
         }
     }
-    public class FrameCapture
+    public class FrameCapture : IDisposable
     {
         int ScreenWidth = SystemInformation.VirtualScreen.Width;
         int ScreenHeight = SystemInformation.VirtualScreen.Height;
         int ABSX = SystemInformation.VirtualScreen.X;
         int ABSY = SystemInformation.VirtualScreen.Y;
         private Windows.UI.Composition.Visual _Visual;
-        private GraphicsCaptureItem _captureItem;
-        private GraphicsCaptureSession _graphicsCaptureSession;
-        private Direct3D11CaptureFrame _direct3D11Capture;
-        private Direct3D11CaptureFramePool _direct3D11CaptureFramePool;
-        
-        private Task<Windows.UI.Composition.ContainerVisual> GetVisual()
+
+        private  GraphicsCaptureItem _captureItem;
+        public   GraphicsCaptureSession _graphicsCaptureSession;
+        private  Direct3D11CaptureFrame _direct3D11Capture;
+        public   Direct3D11CaptureFramePool _direct3D11CaptureFramePool;
+        public delegate void FramArrivedHandler(Direct3D11CaptureFramePool Framepool, GraphicsCaptureSession graphics);
+        public static event FramArrivedHandler? FrameArrived;
+        public void Dispose()
+        {
+            if (_direct3D11CaptureFramePool != null)
+                _direct3D11CaptureFramePool.Dispose();
+            if(_graphicsCaptureSession!=null)
+                _graphicsCaptureSession.Dispose();
+            if(dev!=null)
+                dev.Dispose();
+            
+        }
+
+        public  void run()
+        {
+            if (_direct3D11CaptureFramePool != null && _graphicsCaptureSession!=null)
+            {
+                _direct3D11CaptureFramePool.FrameArrived += _direct3D11CaptureFramePool_FrameArrived;
+                _graphicsCaptureSession.StartCapture();
+            }
+        }
+        private  Task<Windows.UI.Composition.ContainerVisual> GetVisual()
         {
             var dispatcherQueueHandler = DispatcherQueueController.CreateOnDedicatedThread();
 
@@ -132,103 +157,63 @@ namespace CToC.Screen
             {
                 //ToDO -> you should get the optimal visual of the windows 
                 var Com = new Windows.UI.Composition.Compositor();
+
                 VS = Com.CreateContainerVisual();
                 tcs.SetResult(VS);
-                
+
+
+
             });
-            //if (false)
-                //tcs.SetException(new InvalidOperationException("Dispatcher queue is shut down."));
+
 
             return tcs.Task;
         }
-        private IDirect3DDevice GetDirectdevice()
+        private static IDirect3DDevice GetDirectdevice()
         {
-            using var sharpDxDevice = new SharpDX.Direct3D11.Device(SharpDX.Direct3D.DriverType.Hardware,
-                                                     SharpDX.Direct3D11.DeviceCreationFlags.BgraSupport);
-            var D = CaptureInterop.CreateDirect3DDeviceFromSharpDXDevice2(sharpDxDevice);
-            return D;
-        }
-        private DispatcherQueueController dispatcherQueueController;
-
-        private static Lazy<IDirect3DDevice> device;
-        private IDirect3DDevice dev => GetDirectdevice();
-        private DirectXPixelFormat Format = DirectXPixelFormat.B8G8R8A8UIntNormalized;
-
-        public  async  Task Stream()
-        {
-
-           dispatcherQueueController = DispatcherQueueController.CreateOnDedicatedThread();
-           
-
-            dispatcherQueueController.DispatcherQueue.TryEnqueue(() =>
+            using (var sharpDxDevice = new SharpDX.Direct3D11.Device(SharpDX.Direct3D.DriverType.Hardware,
+                                                     SharpDX.Direct3D11.DeviceCreationFlags.BgraSupport))
             {
-                var Com = new Windows.UI.Composition.Compositor();
-                if (Com != null)
-                {
-                    _Visual = Com.CreateContainerVisual();
-                    _Visual.Size = new System.Numerics.Vector2(ScreenWidth, ScreenHeight);
-
-                }
-
-                if (_Visual != null)
-                {
-                    _captureItem = GraphicsCaptureItem.CreateFromVisual(_Visual);
-                    
-                }
-
-
-                try
-                {
-
-
-
-                    _direct3D11CaptureFramePool = Direct3D11CaptureFramePool.Create(dev, Format, 1, new(ScreenWidth, ScreenHeight));
-
-       
-                    _graphicsCaptureSession = _direct3D11CaptureFramePool.CreateCaptureSession(_captureItem);
-                       
-                    
-                    
-                    
-                    _direct3D11CaptureFramePool.FrameArrived += _direct3D11CaptureFramePool_FrameArrived;
-                    _graphicsCaptureSession.StartCapture();
-
-                   
-
-                }
-                catch(COMException ex)
-                {
-                    System.Windows.MessageBox.Show(ex.Message);
-                }
-                finally
-                {
-
-                    if (_graphicsCaptureSession != null)
-                        _graphicsCaptureSession.Dispose();
-
-                    if (_direct3D11CaptureFramePool != null)
-                        _direct3D11CaptureFramePool.Dispose();
-
-                    if (_direct3D11Capture != null)
-                        _direct3D11Capture.Dispose();
-                    _direct3D11CaptureFramePool?.FrameArrived -= _direct3D11CaptureFramePool_FrameArrived;
-                }
-            });
-            
-
-        }
-
-        private void _direct3D11CaptureFramePool_FrameArrived(Direct3D11CaptureFramePool sender, object args)
-        {
-
-            var frame =sender.TryGetNextFrame();
-            if (frame != null)
-            {
-                var Surface = frame.Surface;
-                
+                var D = CaptureInterop.CreateDirect3DDeviceFromSharpDXDevice2(sharpDxDevice);
+                return D;
             }
         }
+        Windows.UI.WindowId windowId = new();
+        DisplayId displayId = new();
+        private DispatcherQueueController dispatcherQueueController;
+
+        //private static Lazy<IDirect3DDevice> device = new(() => GetDirectdevice());
+        public  IDirect3DDevice dev;
+        private DirectXPixelFormat Format = DirectXPixelFormat.B8G8R8A8UIntNormalized;
+
+        public  void Stream()
+        {
+
+            _captureItem = GraphicsCaptureItem.TryCreateFromDisplayId(displayId);
+            dev = GetDirectdevice();
+
+             _direct3D11CaptureFramePool = Direct3D11CaptureFramePool.CreateFreeThreaded(dev, Format, 1, new(ScreenWidth, ScreenHeight));
+            
+            _direct3D11CaptureFramePool.FrameArrived += _direct3D11CaptureFramePool_FrameArrived;                
+            _graphicsCaptureSession = _direct3D11CaptureFramePool.CreateCaptureSession(_captureItem);
+            _graphicsCaptureSession.StartCapture();
+                
+
+        }
+
+    
+        
+        private  void _direct3D11CaptureFramePool_FrameArrived(Direct3D11CaptureFramePool sender, object args)
+        {
+            using (var frame = sender.TryGetNextFrame())
+            {
+                if (frame != null)
+                {
+                  
+                }
+            }
+
+        }
+        
     }
 }
-
 

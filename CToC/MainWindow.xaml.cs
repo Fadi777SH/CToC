@@ -60,8 +60,8 @@ namespace CToC
         private int ScreenY = SystemInformation.VirtualScreen.Y;
         TakeScreenSnippit screenDisplay;
         private IntPtr Handle;
-    
-        
+
+        FrameCapture capturedFrame = new();
         public static event Action? EndServerConnection;
         public MainWindow()
         {
@@ -69,9 +69,9 @@ namespace CToC
             InitializeComponent();
             DataContext = this;
 
-            CaptureScreenFromClient();
-            FrameCapture capturedFrame = new();
+
             
+
 
             this._IPAddress = GetIPAddress().ToString();
 
@@ -79,59 +79,15 @@ namespace CToC
             Handle = new WindowInteropHelper(this).Handle;
 
 
-            //cap._visual =Windows.UI.Composition.Visual.FromAbi(Handle);
-
             TcpServer.PC2DisConnect += PC2Disconnect;
-
-            new Task(async () =>
-            {
-                while (true)
-                {
-                    await capturedFrame.Stream();
-                    Thread.Sleep(60);
-                }
-            }).Start();
-
-        }
-        private async void run()
-        {
-            using var sharpDxDevice = new SharpDX.Direct3D11.Device(SharpDX.Direct3D.DriverType.Hardware, 
-                SharpDX.Direct3D11.DeviceCreationFlags.BgraSupport);
-            IDirect3DDevice direct3dDevice = CaptureInterop.CreateDirect3DDeviceFromSharpDXDevice2(sharpDxDevice);
-            DispatcherQueueController dispatcherQueueController = DispatcherQueueController.CreateOnDedicatedThread();
-
-
-
-            dispatcherQueueController.DispatcherQueue.TryEnqueue(() =>
-                {
-                    Compositor compositor = new();
-                    var VS = compositor.CreateSpriteVisual();
-                    VS.Size = new System.Numerics.Vector2(30, 30);
-                    var item = GraphicsCaptureItem.CreateFromVisual(VS);
-                    
-
-                    var f = Direct3D11CaptureFramePool.Create(direct3dDevice, DirectXPixelFormat.B8G8R8A8UIntNormalized, 2, item.Size);
-
-                });
-           
-
-
-
-        }
-        public async void StartCapture(byte[] bytes)
-        {
-            Rectangle screenrectangle = new(ScreenX, ScreenY, ScreenWidth, ScreenHeight);
-
-            try
-            {
-                Debug.WriteLine(bytes.Length);
+            new Task(async () => {
+                capturedFrame.Stream();
             }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex); // don't MessageBox inside a loop
-            }
+            ).Start();
 
+            capturedFrame.Dispose();
         }
+
 
         public static BitmapImage ConvertToImageSource(System.Drawing.Image image)
         {
@@ -151,26 +107,7 @@ namespace CToC
                 return bitmapImage;
             }
         }
-        private void CaptureScreenFromClient()
-        {
-            Rectangle screenrectangle = new(ScreenX, ScreenY, ScreenWidth, ScreenHeight);
-            _ = Task.Run(async () =>
-            {
-                while (true)
-                {
-                    try
-                    {
-                        TcpServer.SingleFram += StartCapture;
 
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine(ex); // don't MessageBox inside a loop
-                    }
-
-                }
-            });
-        }
         public string _IPAddress { get; set; }
 
         private void PC2Disconnect()
