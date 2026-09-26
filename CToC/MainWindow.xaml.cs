@@ -175,6 +175,7 @@ namespace CToC
                 if (btn != null && btn.IsChecked == true)
                 {
                     Server?.Sender(ipofpc1, ipofpc2);
+                    
                 }
                 if (btn != null && btn.IsChecked == false)
                 {

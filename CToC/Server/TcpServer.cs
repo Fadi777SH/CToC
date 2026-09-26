@@ -57,7 +57,7 @@ namespace CToC.Server
                     MainWindow.KeyPressEvent += PressThisKey;
                     MainWindow.MouseChange += MouseChangepos;
                     MainWindow.MousePressEvent += MousePressedDown;
-                    SentFrameToPC1 += TcpServer_SentFrameToPC1;
+                    
                 }
                 catch
                 {
@@ -98,11 +98,6 @@ namespace CToC.Server
             var Serverendpint = new IPEndPoint(IPAddressOfPC2, PORT);
 
 
-            new Thread(async delegate ()
-            {
-                //SentFrameToPC1 += TcpServer_SentFrameToPC1;
-            }).Start();
-
             while (true)
             {
 
@@ -111,12 +106,49 @@ namespace CToC.Server
                 byte[] RecievedByte = new byte[255];
                 try
                 {
-                    MainWindow.EndClientConnection += disconnectClient;
-
-                    var g= await Client.ReceiveFromAsync(RecievedByte, Serverendpint);
-                    Array.Resize(ref RecievedByte, g.ReceivedBytes);
-                    FrameArrived?.Invoke(RecievedByte);
                     
+
+                    var size =await Client.ReceiveFromAsync(RecievedByte, Serverendpint);
+                    Array.Resize(ref RecievedByte, size.ReceivedBytes);
+
+                    TCPMessage MSG = fromBytes(RecievedByte);
+                    if (MSG.type == MessageType.Keyboard)
+                    {
+                        int vk = KeyInterop.VirtualKeyFromKey(MSG.key);
+                        var key = (WindowsInput.Native.VirtualKeyCode)vk;
+                        inputsime.Keyboard.KeyDown(key);
+                        inputsime.Keyboard.KeyUp(key);
+                    }
+                    else if (MSG.type == MessageType.point)
+                    {
+
+                        int vWidth = SystemInformation.VirtualScreen.Width;
+                        int vHeight = SystemInformation.VirtualScreen.Height;
+
+                        double absX = (MSG.point.X) * (65535.0 / vWidth);
+                        double absY = (MSG.point.Y) * (65535.0 / vHeight);
+                        var P = GetPC2MousePos(MSG.point);
+                        //inputsime.Mouse.MoveMouseTo(absX, absY);
+                        MousePosition.SetCursorPos((int)P.X, (int)P.Y);
+                    }
+                    else if (MSG.type == MessageType.MouseChange)
+                    {
+                        if (MSG.mousestate == MouseButtonState.Pressed)
+                        {
+                            if (MSG.MouseSide == System.Windows.Input.MouseButton.Left)
+                            {
+                                inputsime.Mouse.LeftButtonClick();
+                            }
+                            if (MSG.MouseSide == System.Windows.Input.MouseButton.Right)
+                            {
+                                inputsime.Mouse.RightButtonClick();
+                            }
+                            if (MSG.MouseSide == System.Windows.Input.MouseButton.Middle)
+                            {
+
+                            }
+                        }
+                    }
 
                 }
                 catch (Exception ex)
@@ -127,11 +159,13 @@ namespace CToC.Server
             }
         }
 
+
         private async void TcpServer_SentFrameToPC1(Bitmap bitmap)
         {
             using (MemoryStream stream = new())
             {
                 bitmap.Save(stream, ImageFormat.Bmp);
+
                 if (ClientendPoint != null)
                     Client?.SendToAsync(stream.ToArray(), ClientendPoint);
             }
