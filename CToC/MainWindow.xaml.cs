@@ -59,9 +59,6 @@ namespace CToC
             DataContext = this;
 
 
-            
-
-
             this._IPAddress = GetIPAddress().ToString();
 
 
@@ -69,14 +66,16 @@ namespace CToC
 
 
             TcpServer.PC2DisConnect += PC2Disconnect;
-            new Task(async () => {
-                capturedFrame.Stream();
-            }
-            ).Start();
-
+            TcpServer.FrameArrived += TcpServer_any;
             
         }
 
+        private async void TcpServer_any(byte[] bytes)
+        {
+            var bitmap = ConversionClass.ByteToBitmMap(bytes);
+            var s = ConvertToImageSource(bitmap);
+            this.Dispatcher.Invoke(() => this.Frames.Source = s);
+        }
 
         public static BitmapImage ConvertToImageSource(System.Drawing.Image image)
         {
@@ -106,38 +105,7 @@ namespace CToC
            
 
         }
-        
-        public async static void _direct3D11CaptureFramePool_FrameArrived(Direct3D11CaptureFramePool sender, object args)
-        {
-
-            using (var Frame = sender.TryGetNextFrame())
-            {
-                if (Frame != null)
-                {
-                    using (var softwareBitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(Frame.Surface))
-                    {
-                        using (var bitmap = await FormSoftwarebitmapTobitmap(softwareBitmap))
-                        {
-
-                            var GetBytes = ConversionClass.BitmapTobyteConverter(bitmap);
-                        }
-                    }               
-                }
-            }
-
-        }
-        private static async Task<Bitmap> FormSoftwarebitmapTobitmap(SoftwareBitmap softwareBitmap)
-        {
-
-            using (var stream = new Windows.Storage.Streams.InMemoryRandomAccessStream())
-            {
-                BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
-                encoder.SetSoftwareBitmap(softwareBitmap);
-                await encoder.FlushAsync();
-                Bitmap bmp = new System.Drawing.Bitmap(stream.AsStream());
-                return bmp;
-            }
-        }
+       
         private IPAddress GetIPAddress()
         {
             var dns = Dns.GetHostEntry(Dns.GetHostName());
@@ -167,40 +135,52 @@ namespace CToC
         private void PC2ToPC1Checked(object sender, RoutedEventArgs e)
         {
             var btn = sender as ToggleButton;
-
-            IPAddress ipofpc1 = IPAddress.Parse(_IPAddress);
-            IPAddress ipofpc2 = IPAddress.Parse(this.PasswordOfController.Text);
-
-            if (btn != null && btn.IsChecked == true)
+            try
             {
-                Server?.Reciever(ipofpc1, ipofpc2);
+                IPAddress ipofpc1 = IPAddress.Parse(_IPAddress);
+                IPAddress ipofpc2 = IPAddress.Parse(this.PasswordOfController.Text);
+                if (btn != null && btn.IsChecked == true)
+                {
+                    Server?.Reciever(ipofpc1, ipofpc2);
+                    capturedFrame.Stream();
+                }
+                if (btn != null && btn.IsChecked == false)
+                {
+                    capturedFrame.EndStream();
+                    EndClientConnection?.Invoke();
+                    System.Windows.MessageBox.Show("you disconnect as Client .");
+                }
             }
-            if (btn != null && btn.IsChecked == false)
+            
+            catch (Exception ex)
             {
-                EndClientConnection?.Invoke();
-                System.Windows.MessageBox.Show("you disconnect as Client .");
+                System.Windows.MessageBox.Show($"Invalid IP type . \n {ex.Message}");
             }
         }
 
         private void PC1ToPC2Checked(object sender, RoutedEventArgs e)
         {
-            Debug.WriteLine(sender.GetType());
+            
             var btn = sender as ToggleButton;
-            Server = new();
-
-            IPAddress ipofpc1 = IPAddress.Parse(_IPAddress);
-            IPAddress ipofpc2 = IPAddress.Parse(this.PasswordOfSender.Text);
-
-            if (btn != null && btn.IsChecked == true)
+            try
             {
-                Server?.Sender(ipofpc1, ipofpc2);
-            }
-            if (btn != null && btn.IsChecked == false)
-            {
-                EndServerConnection?.Invoke();
-                System.Windows.MessageBox.Show("you disconnect your Server .");
-            }
+                IPAddress ipofpc1 = IPAddress.Parse(_IPAddress);
+                IPAddress ipofpc2 = IPAddress.Parse(this.PasswordOfSender.Text);
 
+                if (btn != null && btn.IsChecked == true)
+                {
+                    Server?.Sender(ipofpc1, ipofpc2);
+                }
+                if (btn != null && btn.IsChecked == false)
+                {
+                    EndServerConnection?.Invoke();
+                    System.Windows.MessageBox.Show("you disconnect your Server .");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Invalid IP type . \n {ex.Message}");
+            }
         }
 
 

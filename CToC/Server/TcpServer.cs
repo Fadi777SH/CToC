@@ -1,21 +1,12 @@
 ﻿using CToC.Mouse;
-using CToC.Screen;
-using Microsoft.Graphics.Canvas;
-using Microsoft.Graphics.Canvas.UI.Xaml;
 using System.Diagnostics;
-using System.Globalization;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Printing;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Interop;
-using System.Windows.Threading;
-using Vortice.Mathematics.PackedVector;
 using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX.Direct3D11;
 using Windows.Graphics.Imaging;
@@ -38,18 +29,25 @@ namespace CToC.Server
         //private bool ClientShotDown = false;
         int ScreenWidth = SystemInformation.VirtualScreen.Width;
         int ScreenHeight = SystemInformation.VirtualScreen.Height;
-        EndPoint endPoint;
+        EndPoint PcEndPoint;
+        EndPoint ClientendPoint;
         int ABSX = SystemInformation.VirtualScreen.X;
         int ABSY = SystemInformation.VirtualScreen.Y;
        
         public delegate void framCapture(byte[] bytes);
         public static event framCapture? SingleFram;
+        public delegate void ShowPic(byte[] bytes);
+        public static event ShowPic? FrameArrived;
+        public delegate void SentFrameToPC1Handler(byte[] bytes);
+        public static event SentFrameToPC1Handler? SentFrameToPC1;
         public async Task Sender(IPAddress IPAddressOfPC1 , IPAddress IPAddressOfPC2)
         {
             if (Accept?.Connected == true) return;
             Accept = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             Accept.Bind(new IPEndPoint(IPAddressOfPC1,PORT));
-            endPoint = new IPEndPoint(IPAddressOfPC2, PORT);
+
+            PcEndPoint = new IPEndPoint(IPAddressOfPC1, PORT);
+            ClientendPoint = new IPEndPoint(IPAddressOfPC2, PORT);
 
 
 
@@ -63,15 +61,16 @@ namespace CToC.Server
                     MainWindow.MousePressEvent += MousePressedDown;
 
 
-                    byte[] re = new byte[255];
+                    byte[] Rec = new byte[255];
                     while (true)
                     {
-                        await Accept.ReceiveFromAsync(re, endPoint);
+                        var Size= await Accept.ReceiveFromAsync(Rec, ClientendPoint);
+                        Array.Resize(ref Rec, Size.ReceivedBytes);
                        
-                        if (re!=null)
+                        if (Rec!=null)
                         {
                            
-                            SingleFram?.Invoke(re);
+                            FrameArrived?.Invoke(Rec);
                         }
                     }
                 }
@@ -112,11 +111,14 @@ namespace CToC.Server
             
             Client.Bind(new IPEndPoint(IPAddressOfPC1, PORT));
 
+            ClientendPoint = new IPEndPoint(IPAddressOfPC2, PORT);
             var Serverendpint = new IPEndPoint(IPAddressOfPC2,PORT);
 
-            Rectangle screenrectangle = new(ScreenX, ScreenY, ScreenWidth, ScreenHeight);
 
-
+            new Task(() =>
+            {
+                SentFrameToPC1 += TcpServer_SentFrameToPC1;
+            }).Start();
 
             while (true)
             {
@@ -178,8 +180,12 @@ namespace CToC.Server
             }
         }
 
+        private void TcpServer_SentFrameToPC1(byte[] bytes)
+        {
+            if(ClientendPoint!=null)
+            Client?.SendToAsync(bytes, ClientendPoint);
+        }
 
-        
         enum MessageType
         {
             Keyboard,
@@ -274,7 +280,7 @@ namespace CToC.Server
             MSG.MouseSide = System.Windows.Input.MouseButton.Left;
             byte[] bytes = getBytesOfTCPMessage(MSG);
             if (Accept !=null&& ServerShotDown==false)
-            await Accept.SendToAsync(bytes,endPoint);
+            await Accept.SendToAsync(bytes,ClientendPoint);
         }
 
         public  void FrameMessage(ref byte[] StoreByte ,byte[] bytes,int w,int h)
@@ -305,7 +311,7 @@ namespace CToC.Server
             byte[] bytes = getBytesOfTCPMessage(MSG);
             if (Accept != null && ServerShotDown==false)
             {
-                await Accept.SendToAsync(bytes, endPoint);
+                await Accept.SendToAsync(bytes, ClientendPoint);
             }
 
         }
@@ -325,7 +331,7 @@ namespace CToC.Server
 
             if (Accept != null && ServerShotDown == false)
             {
-               await Accept.SendToAsync(bytes, endPoint);
+               await Accept.SendToAsync(bytes, ClientendPoint);
                
 
             }
@@ -351,26 +357,68 @@ namespace CToC.Server
                 {
                     using (var softwareBitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(Frame.Surface))
                     {
+                        
                         using (var bitmap = await FormSoftwarebitmapTobitmap(softwareBitmap))
                         {
+                            if (bitmap != null)
+                            {
+                                using (MemoryStream stream = new())
+                                {
 
-                            var GetBytes = ConversionClass.BitmapTobyteConverter(bitmap);
+                                    bitmap.Save(stream, ImageFormat.Bmp);
+                                    
+                                    SentFrameToPC1?.Invoke(stream.ToArray());
+
+                                }
+                            }
                         }
                     }
                 }
             }
 
         }
+
+
         private static async Task<Bitmap> FormSoftwarebitmapTobitmap(SoftwareBitmap softwareBitmap)
         {
 
             using (var stream = new Windows.Storage.Streams.InMemoryRandomAccessStream())
             {
-                BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
+
+                BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.JpegEncoderId, stream);
                 encoder.SetSoftwareBitmap(softwareBitmap);
-                await encoder.FlushAsync();
-                Bitmap bmp = new System.Drawing.Bitmap(stream.AsStream());
-                return bmp;
+
+                encoder.BitmapTransform.ScaledWidth = 320;
+                encoder.BitmapTransform.ScaledHeight = 240;
+                encoder.BitmapTransform.Rotation = Windows.Graphics.Imaging.BitmapRotation.Clockwise90Degrees;
+                encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Fant;
+                encoder.IsThumbnailGenerated = true;
+
+                try
+                {
+                    await encoder.FlushAsync();
+                }
+                catch (Exception err)
+                {
+                    const int WINCODEC_ERR_UNSUPPORTEDOPERATION = unchecked((int)0x88982F81);
+                    switch (err.HResult)
+                    {
+                        case WINCODEC_ERR_UNSUPPORTEDOPERATION:
+                            // If the encoder does not support writing a thumbnail, then try again
+                            // but disable thumbnail generation.
+                            encoder.IsThumbnailGenerated = false;
+                            break;
+                        default:
+                            throw;
+                    }
+                }
+
+                using (Bitmap bmp = new System.Drawing.Bitmap(stream.AsStream()))
+                {
+                    //FrameArrived?.Invoke(bmp);
+                    return bmp;
+                }
+
             }
         }
     }

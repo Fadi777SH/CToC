@@ -72,12 +72,20 @@ namespace CToC.Screen
             return imagemap;
 
         }
-        public static byte[] BitmapTobyteConverter(Bitmap image)
+        public static byte[]? BitmapTobyteConverter(Bitmap image)
         {
             using (MemoryStream stream = new())
             {
-                image.Save(stream, ImageFormat.Bmp);
-                return stream.ToArray();
+                try
+                {
+                    image.Save(stream, ImageFormat.Bmp);
+                    return stream.ToArray();
+                }
+                catch(Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+                return null;
             }
         }
         public static Bitmap ByteToBitmMap(byte[] bytes)
@@ -113,14 +121,6 @@ namespace CToC.Screen
             
         }
 
-        public  void run()
-        {
-            if (_direct3D11CaptureFramePool != null && _graphicsCaptureSession!=null)
-            {
-                _direct3D11CaptureFramePool.FrameArrived += _direct3D11CaptureFramePool_FrameArrived;
-                _graphicsCaptureSession.StartCapture();
-            }
-        }
         private  Task<Windows.UI.Composition.ContainerVisual> GetVisual()
         {
             var dispatcherQueueHandler = DispatcherQueueController.CreateOnDedicatedThread();
@@ -169,27 +169,18 @@ namespace CToC.Screen
 
             _direct3D11CaptureFramePool = Direct3D11CaptureFramePool.CreateFreeThreaded(dev, Format, 1, new(ScreenWidth, ScreenHeight));
             
-            _direct3D11CaptureFramePool.FrameArrived += MainWindow._direct3D11CaptureFramePool_FrameArrived;                
+            _direct3D11CaptureFramePool.FrameArrived += TcpServer._direct3D11CaptureFramePool_FrameArrived;                
             _graphicsCaptureSession = _direct3D11CaptureFramePool.CreateCaptureSession(_captureItem);
             _graphicsCaptureSession.StartCapture();
                 
 
         }
 
-    
-        
-        private  void _direct3D11CaptureFramePool_FrameArrived(Direct3D11CaptureFramePool sender, object args)
+        public void EndStream()
         {
-            using (var Frame = sender.TryGetNextFrame())
-            {
-                if (Frame != null)
-                {
-                   // Debug.WriteLine();
-                }
-            }
-
+            _direct3D11CaptureFramePool.FrameArrived -= TcpServer._direct3D11CaptureFramePool_FrameArrived;
+            Dispose();
         }
-        
     }
 }
 
