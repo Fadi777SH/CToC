@@ -60,21 +60,8 @@ namespace CToC.Screen
         }
     }
 
-    public class RecordScreen
+    public class ConversionClass
     {
-        private Rectangle bounds;
-        private string outputPath = "";
-        private string tempPath = "";
-        private int fileCount = 1;
-        private List<string> inputImageSequence = new List<string>();
-        static Stopwatch watchtime = new Stopwatch();
-        RecordScreen(Rectangle Screenbound)
-        {
-            bounds = Screenbound;
-        }
-
-
-
         public static Bitmap Recordscreen(Rectangle screenbound)
         {
             Bitmap imagemap = new(screenbound.Width, screenbound.Height);

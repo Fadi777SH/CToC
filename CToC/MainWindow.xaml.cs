@@ -19,8 +19,9 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Windows.Graphics.Capture;
 using Windows.Graphics.Imaging;
+using Windows.Storage.Streams;
 using Windows.System;
-
+using BitmapEncoder = Windows.Graphics.Imaging.BitmapEncoder;
 using Point = System.Windows.Point;
 
 namespace CToC
@@ -108,17 +109,34 @@ namespace CToC
         
         public async static void _direct3D11CaptureFramePool_FrameArrived(Direct3D11CaptureFramePool sender, object args)
         {
-            DispatcherQueueController dispatcherQueue = DispatcherQueueController.CreateOnDedicatedThread();
 
             using (var Frame = sender.TryGetNextFrame())
             {
                 if (Frame != null)
                 {
-                    var softwareBitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(Frame.Surface);
-                    
+                    using (var softwareBitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(Frame.Surface))
+                    {
+                        using (var bitmap = await FormSoftwarebitmapTobitmap(softwareBitmap))
+                        {
+
+                            var GetBytes = ConversionClass.BitmapTobyteConverter(bitmap);
+                        }
+                    }               
                 }
             }
 
+        }
+        private static async Task<Bitmap> FormSoftwarebitmapTobitmap(SoftwareBitmap softwareBitmap)
+        {
+
+            using (var stream = new Windows.Storage.Streams.InMemoryRandomAccessStream())
+            {
+                BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
+                encoder.SetSoftwareBitmap(softwareBitmap);
+                await encoder.FlushAsync();
+                Bitmap bmp = new System.Drawing.Bitmap(stream.AsStream());
+                return bmp;
+            }
         }
         private IPAddress GetIPAddress()
         {

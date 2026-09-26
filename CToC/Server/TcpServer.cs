@@ -4,6 +4,7 @@ using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Printing;
@@ -17,6 +18,7 @@ using System.Windows.Threading;
 using Vortice.Mathematics.PackedVector;
 using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX.Direct3D11;
+using Windows.Graphics.Imaging;
 using Windows.Media.Capture;
 using WindowsInput;
 using Point = System.Windows.Point;
@@ -340,21 +342,36 @@ namespace CToC.Server
            // if (Client != null)
                // Client.Close();
         }
-        public static void _direct3D11CaptureFramePool_FrameArrived(Direct3D11CaptureFramePool sender, object args)
+        public async static void _direct3D11CaptureFramePool_FrameArrived(Direct3D11CaptureFramePool sender, object args)
         {
+
             using (var Frame = sender.TryGetNextFrame())
             {
                 if (Frame != null)
                 {
-                    var f = FrameCapture.GetDirectdevice();
-                    CanvasControl canvasControl = new();
-                    var dev = canvasControl.Device;
-                    ICanvasResourceCreator de = dev;
-                    CanvasBitmap canvasBitmap = CanvasBitmap.CreateFromDirect3D11Surface(de, Frame.Surface);
-                    Debug.WriteLine(canvasBitmap.Bounds.Left);
+                    using (var softwareBitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(Frame.Surface))
+                    {
+                        using (var bitmap = await FormSoftwarebitmapTobitmap(softwareBitmap))
+                        {
+
+                            var GetBytes = ConversionClass.BitmapTobyteConverter(bitmap);
+                        }
+                    }
                 }
             }
 
+        }
+        private static async Task<Bitmap> FormSoftwarebitmapTobitmap(SoftwareBitmap softwareBitmap)
+        {
+
+            using (var stream = new Windows.Storage.Streams.InMemoryRandomAccessStream())
+            {
+                BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
+                encoder.SetSoftwareBitmap(softwareBitmap);
+                await encoder.FlushAsync();
+                Bitmap bmp = new System.Drawing.Bitmap(stream.AsStream());
+                return bmp;
+            }
         }
     }
 }
