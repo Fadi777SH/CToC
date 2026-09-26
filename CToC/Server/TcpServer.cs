@@ -15,15 +15,15 @@ using WindowsInput;
 using Point = System.Windows.Point;
 namespace CToC.Server
 {
-    public  class TcpServer
+    public class TcpServer
     {
-        Socket? Accept ;
+        Socket? Accept;
         InputSimulator? inputsime;
         Socket? Client;
         int PORT = 22;
         private int ScreenX = SystemInformation.VirtualScreen.X;
         private int ScreenY = SystemInformation.VirtualScreen.Y;
-       
+
         public static event Action? PC2DisConnect;
         private bool ServerShotDown = false;
         //private bool ClientShotDown = false;
@@ -33,18 +33,18 @@ namespace CToC.Server
         EndPoint ClientendPoint;
         int ABSX = SystemInformation.VirtualScreen.X;
         int ABSY = SystemInformation.VirtualScreen.Y;
-       
+
         public delegate void framCapture(byte[] bytes);
         public static event framCapture? SingleFram;
         public delegate void ShowPic(byte[] bytes);
         public static event ShowPic? FrameArrived;
-        public delegate void SentFrameToPC1Handler(byte[] bytes);
+        public delegate void SentFrameToPC1Handler(Bitmap bitmap);
         public static event SentFrameToPC1Handler? SentFrameToPC1;
-        public async Task Sender(IPAddress IPAddressOfPC1 , IPAddress IPAddressOfPC2)
+        public async Task Sender(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
             if (Accept?.Connected == true) return;
             Accept = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            Accept.Bind(new IPEndPoint(IPAddressOfPC1,PORT));
+            Accept.Bind(new IPEndPoint(IPAddressOfPC1, PORT));
 
             PcEndPoint = new IPEndPoint(IPAddressOfPC1, PORT);
             ClientendPoint = new IPEndPoint(IPAddressOfPC2, PORT);
@@ -64,12 +64,12 @@ namespace CToC.Server
                     byte[] Rec = new byte[255];
                     while (true)
                     {
-                        var Size= await Accept.ReceiveFromAsync(Rec, ClientendPoint);
+                        var Size = await Accept.ReceiveFromAsync(Rec, ClientendPoint);
                         Array.Resize(ref Rec, Size.ReceivedBytes);
-                       
-                        if (Rec!=null)
+
+                        if (Rec != null)
                         {
-                           
+
                             FrameArrived?.Invoke(Rec);
                         }
                     }
@@ -81,10 +81,10 @@ namespace CToC.Server
                     PC2DisConnect?.Invoke();
 
                 }
-                
+
             })
             {
-                
+
             }.Start();
 
 
@@ -108,14 +108,14 @@ namespace CToC.Server
         {
             inputsime = new();
             Client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            
+
             Client.Bind(new IPEndPoint(IPAddressOfPC1, PORT));
 
             ClientendPoint = new IPEndPoint(IPAddressOfPC2, PORT);
-            var Serverendpint = new IPEndPoint(IPAddressOfPC2,PORT);
+            var Serverendpint = new IPEndPoint(IPAddressOfPC2, PORT);
 
 
-            new Task(() =>
+            new Task(async () =>
             {
                 SentFrameToPC1 += TcpServer_SentFrameToPC1;
             }).Start();
@@ -124,7 +124,7 @@ namespace CToC.Server
             {
 
 
-                
+
                 byte[] RecievedByte = new byte[255];
                 try
                 {
@@ -150,7 +150,7 @@ namespace CToC.Server
                         double absY = (MSG.point.Y) * (65535.0 / vHeight);
                         var P = GetPC2MousePos(MSG.point);
                         //inputsime.Mouse.MoveMouseTo(absX, absY);
-                        MousePosition.SetCursorPos((int)P.X,(int)P.Y);
+                        MousePosition.SetCursorPos((int)P.X, (int)P.Y);
                     }
                     else if (MSG.type == MessageType.MouseChange)
                     {
@@ -172,7 +172,7 @@ namespace CToC.Server
                     }
 
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     System.Windows.MessageBox.Show(ex.Message);
                 }
@@ -180,21 +180,25 @@ namespace CToC.Server
             }
         }
 
-        private void TcpServer_SentFrameToPC1(byte[] bytes)
+        private async void TcpServer_SentFrameToPC1(Bitmap bitmap)
         {
-            if(ClientendPoint!=null)
-            Client?.SendToAsync(bytes, ClientendPoint);
+            using (MemoryStream stream = new())
+            {
+                bitmap.Save(stream, ImageFormat.Bmp);
+                if (ClientendPoint != null)
+                    Client?.SendToAsync(stream.ToArray(), ClientendPoint);
+            }
         }
 
         enum MessageType
         {
             Keyboard,
             MouseChange,
-            point ,
+            point,
             MouseWheel,
             Fram,
         }
-        struct  TCPMessage
+        struct TCPMessage
         {
             public MessageType type;
             public Key key;
@@ -227,7 +231,7 @@ namespace CToC.Server
             }
             return arr;
         }
-        static byte[]  getBytesOfFrame(IDirect3DSurface str)
+        static byte[] getBytesOfFrame(IDirect3DSurface str)
         {
             int size = Marshal.SizeOf(str);
 
@@ -247,7 +251,7 @@ namespace CToC.Server
             }
             return arr;
         }
-        TCPMessage  fromBytes(byte[] arr)
+        TCPMessage fromBytes(byte[] arr)
         {
             TCPMessage str = new TCPMessage();
 
@@ -272,18 +276,18 @@ namespace CToC.Server
 
             TCPMessage MSG = new();
 
-            
+
             MSG.type = MessageType.Keyboard;
             MSG.key = key;
-            MSG.point = new System.Windows.Point(0,0);
+            MSG.point = new System.Windows.Point(0, 0);
             MSG.mousestate = MouseButtonState.Pressed;
             MSG.MouseSide = System.Windows.Input.MouseButton.Left;
             byte[] bytes = getBytesOfTCPMessage(MSG);
-            if (Accept !=null&& ServerShotDown==false)
-            await Accept.SendToAsync(bytes,ClientendPoint);
+            if (Accept != null && ServerShotDown == false)
+                await Accept.SendToAsync(bytes, ClientendPoint);
         }
 
-        public  void FrameMessage(ref byte[] StoreByte ,byte[] bytes,int w,int h)
+        public void FrameMessage(ref byte[] StoreByte, byte[] bytes, int w, int h)
         {
             TCPMessage MSG = new();
             MSG.type = MessageType.Fram;
@@ -298,18 +302,18 @@ namespace CToC.Server
         {
 
             TCPMessage MSG = new();
-      
+
 
             MSG.type = MessageType.point;
             MSG.key = Key.LWin;
-     
+
             MSG.point = portion;
-       
+
             MSG.MouseSide = System.Windows.Input.MouseButton.Left;
             MSG.mousestate = MouseButtonState.Pressed;
 
             byte[] bytes = getBytesOfTCPMessage(MSG);
-            if (Accept != null && ServerShotDown==false)
+            if (Accept != null && ServerShotDown == false)
             {
                 await Accept.SendToAsync(bytes, ClientendPoint);
             }
@@ -323,7 +327,7 @@ namespace CToC.Server
 
             MSG.type = MessageType.MouseChange;
             MSG.key = Key.LWin;
-            MSG.point = new(0,0);
+            MSG.point = new(0, 0);
             MSG.MouseSide = mouseside;
             MSG.mousestate = state;
             byte[] bytes = getBytesOfTCPMessage(MSG);
@@ -331,8 +335,8 @@ namespace CToC.Server
 
             if (Accept != null && ServerShotDown == false)
             {
-               await Accept.SendToAsync(bytes, ClientendPoint);
-               
+                await Accept.SendToAsync(bytes, ClientendPoint);
+
 
             }
         }
@@ -345,81 +349,92 @@ namespace CToC.Server
 
         public void disconnectClient()
         {
-           // if (Client != null)
-               // Client.Close();
+            // if (Client != null)
+            // Client.Close();
         }
+
         public async static void _direct3D11CaptureFramePool_FrameArrived(Direct3D11CaptureFramePool sender, object args)
         {
 
-            using (var Frame = sender.TryGetNextFrame())
+            var Frame = sender.TryGetNextFrame();
+            
+            if (Frame != null)
             {
-                if (Frame != null)
+                var softwareBitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(Frame.Surface);
+                    
+                var bitmap = await FormSoftwarebitmapTobitmap(softwareBitmap);
+
+                if (bitmap != null)
                 {
-                    using (var softwareBitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(Frame.Surface))
+                   // MemoryStream stream = new();
+
+                    try
                     {
-                        
-                        using (var bitmap = await FormSoftwarebitmapTobitmap(softwareBitmap))
-                        {
-                            if (bitmap != null)
-                            {
-                                using (MemoryStream stream = new())
-                                {
-
-                                    bitmap.Save(stream, ImageFormat.Bmp);
-                                    
-                                    SentFrameToPC1?.Invoke(stream.ToArray());
-
-                                }
-                            }
-                        }
+                            
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message);
+                    }
+                    finally
+                    {
+                       // stream?.Dispose();
+                        bitmap?.Dispose();
+                        Frame?.Dispose();
+                        softwareBitmap?.Dispose();
                     }
                 }
+                    
             }
+            
 
         }
+    
 
-
-        private static async Task<Bitmap> FormSoftwarebitmapTobitmap(SoftwareBitmap softwareBitmap)
+        private static async Task<Bitmap?> FormSoftwarebitmapTobitmap(SoftwareBitmap softwareBitmap)
         {
 
-            using (var stream = new Windows.Storage.Streams.InMemoryRandomAccessStream())
+            var stream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
+            
+
+            BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.JpegEncoderId, stream);
+            encoder.SetSoftwareBitmap(softwareBitmap);
+
+            encoder.BitmapTransform.ScaledWidth = 320;
+            encoder.BitmapTransform.ScaledHeight = 240;
+            encoder.BitmapTransform.Rotation = Windows.Graphics.Imaging.BitmapRotation.Clockwise90Degrees;
+            encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Fant;
+            encoder.IsThumbnailGenerated = true;
+            await encoder.FlushAsync();
+           var  bmp = new Bitmap(stream.AsStream());
+
+            try
             {
-
-                BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.JpegEncoderId, stream);
-                encoder.SetSoftwareBitmap(softwareBitmap);
-
-                encoder.BitmapTransform.ScaledWidth = 320;
-                encoder.BitmapTransform.ScaledHeight = 240;
-                encoder.BitmapTransform.Rotation = Windows.Graphics.Imaging.BitmapRotation.Clockwise90Degrees;
-                encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Fant;
-                encoder.IsThumbnailGenerated = true;
-
-                try
+                SentFrameToPC1?.Invoke(bmp);
+                return bmp;
+            }
+            catch (Exception err)
+            {
+                const int WINCODEC_ERR_UNSUPPORTEDOPERATION = unchecked((int)0x88982F81);
+                switch (err.HResult)
                 {
-                    await encoder.FlushAsync();
+                    case WINCODEC_ERR_UNSUPPORTEDOPERATION:
+                        // If the encoder does not support writing a thumbnail, then try again
+                        // but disable thumbnail generation.
+                        encoder.IsThumbnailGenerated = false;
+                        break;
+                    default:
+                        throw;
                 }
-                catch (Exception err)
-                {
-                    const int WINCODEC_ERR_UNSUPPORTEDOPERATION = unchecked((int)0x88982F81);
-                    switch (err.HResult)
-                    {
-                        case WINCODEC_ERR_UNSUPPORTEDOPERATION:
-                            // If the encoder does not support writing a thumbnail, then try again
-                            // but disable thumbnail generation.
-                            encoder.IsThumbnailGenerated = false;
-                            break;
-                        default:
-                            throw;
-                    }
-                }
-
-                using (Bitmap bmp = new System.Drawing.Bitmap(stream.AsStream()))
-                {
-                    //FrameArrived?.Invoke(bmp);
-                    return bmp;
-                }
+            }
+            finally
+            {
+                bmp?.Dispose();
+                stream?.Dispose();
 
             }
+            return null;
+            
         }
     }
 }
