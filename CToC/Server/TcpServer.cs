@@ -48,31 +48,16 @@ namespace CToC.Server
 
             PcEndPoint = new IPEndPoint(IPAddressOfPC1, PORT);
             ClientendPoint = new IPEndPoint(IPAddressOfPC2, PORT);
-
-
-
             new Thread(async delegate ()
             {
                 try
                 {
+
                     MainWindow.EndServerConnection += MainWindow_EndServerConnection;
                     MainWindow.KeyPressEvent += PressThisKey;
                     MainWindow.MouseChange += MouseChangepos;
                     MainWindow.MousePressEvent += MousePressedDown;
-
-                    byte[] Rec = new byte[255];
-                    while (true)
-                    {
-                        var Size = await Accept.ReceiveFromAsync(Rec, ClientendPoint);
-                        Array.Resize(ref Rec, Size.ReceivedBytes);
-
-                        if (Rec != null)
-                        {
-
-                            FrameArrived?.Invoke(Rec);
-                        }
-                    }
-
+                    SentFrameToPC1 += TcpServer_SentFrameToPC1;
                 }
                 catch
                 {
@@ -87,7 +72,6 @@ namespace CToC.Server
 
             }.Start();
 
-           
             MainWindow.KeyPressEvent -= PressThisKey;
             MainWindow.MouseChange -= MouseChangepos;
             MainWindow.MousePressEvent -= MousePressedDown;
@@ -116,7 +100,7 @@ namespace CToC.Server
 
             new Thread(async delegate ()
             {
-                SentFrameToPC1 += TcpServer_SentFrameToPC1;
+                //SentFrameToPC1 += TcpServer_SentFrameToPC1;
             }).Start();
 
             while (true)
@@ -129,46 +113,10 @@ namespace CToC.Server
                 {
                     MainWindow.EndClientConnection += disconnectClient;
 
-                    await Client.ReceiveFromAsync(RecievedByte, Serverendpint);
-
-                    TCPMessage MSG = fromBytes(RecievedByte);
-                    if (MSG.type == MessageType.Keyboard)
-                    {
-                        int vk = KeyInterop.VirtualKeyFromKey(MSG.key);
-                        var key = (WindowsInput.Native.VirtualKeyCode)vk;
-                        inputsime.Keyboard.KeyDown(key);
-                        inputsime.Keyboard.KeyUp(key);
-                    }
-                    else if (MSG.type == MessageType.point)
-                    {
-
-                        int vWidth = SystemInformation.VirtualScreen.Width;
-                        int vHeight = SystemInformation.VirtualScreen.Height;
-
-                        double absX = (MSG.point.X) * (65535.0 / vWidth);
-                        double absY = (MSG.point.Y) * (65535.0 / vHeight);
-                        var P = GetPC2MousePos(MSG.point);
-                        //inputsime.Mouse.MoveMouseTo(absX, absY);
-                        MousePosition.SetCursorPos((int)P.X, (int)P.Y);
-                    }
-                    else if (MSG.type == MessageType.MouseChange)
-                    {
-                        if (MSG.mousestate == MouseButtonState.Pressed)
-                        {
-                            if (MSG.MouseSide == System.Windows.Input.MouseButton.Left)
-                            {
-                                inputsime.Mouse.LeftButtonClick();
-                            }
-                            if (MSG.MouseSide == System.Windows.Input.MouseButton.Right)
-                            {
-                                inputsime.Mouse.RightButtonClick();
-                            }
-                            if (MSG.MouseSide == System.Windows.Input.MouseButton.Middle)
-                            {
-
-                            }
-                        }
-                    }
+                    var g= await Client.ReceiveFromAsync(RecievedByte, Serverendpint);
+                    Array.Resize(ref RecievedByte, g.ReceivedBytes);
+                    FrameArrived?.Invoke(RecievedByte);
+                    
 
                 }
                 catch (Exception ex)

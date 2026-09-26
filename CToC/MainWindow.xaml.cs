@@ -72,9 +72,14 @@ namespace CToC
 
         private async void TcpServer_any(byte[] bytes)
         {
-            var bitmap = ConversionClass.ByteToBitmMap(bytes);
-            var s = ConvertToImageSource(bitmap);
-            this.Dispatcher.Invoke(() => this.Frames.Source = s);
+            MemoryStream stream = new MemoryStream(bytes);
+            
+            Bitmap t= new(stream);
+
+            var i = ConvertToImageSource(t);
+            this.Dispatcher.Invoke(() => this.Frames.Source = i);
+            
+
         }
 
         public static BitmapImage ConvertToImageSource(System.Drawing.Image image)
