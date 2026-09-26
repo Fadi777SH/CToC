@@ -1,20 +1,9 @@
-﻿using DevExpress.DirectX.Common.Direct3D;
-using DevExpress.DirectX.StandardInterop.Direct3D;
-using SharpDX.Direct3D11;
-using SharpGen.Runtime;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Configuration.Internal;
+﻿using CToC.Server;
+
 using System.Diagnostics;
-using System.Diagnostics.Eventing.Reader;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Net;
-using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
-using Windows.Devices.PointOfService.Provider;
-using Windows.Gaming.Input.ForceFeedback;
 using Windows.Graphics;
 using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX;
@@ -168,7 +157,7 @@ namespace CToC.Screen
 
             return tcs.Task;
         }
-        private static IDirect3DDevice GetDirectdevice()
+        public static IDirect3DDevice GetDirectdevice()
         {
             using (var sharpDxDevice = new SharpDX.Direct3D11.Device(SharpDX.Direct3D.DriverType.Hardware,
                                                      SharpDX.Direct3D11.DeviceCreationFlags.BgraSupport))
@@ -187,13 +176,13 @@ namespace CToC.Screen
 
         public  void Stream()
         {
-
+           
             _captureItem = GraphicsCaptureItem.TryCreateFromDisplayId(displayId);
             dev = GetDirectdevice();
 
-             _direct3D11CaptureFramePool = Direct3D11CaptureFramePool.CreateFreeThreaded(dev, Format, 1, new(ScreenWidth, ScreenHeight));
+            _direct3D11CaptureFramePool = Direct3D11CaptureFramePool.CreateFreeThreaded(dev, Format, 1, new(ScreenWidth, ScreenHeight));
             
-            _direct3D11CaptureFramePool.FrameArrived += _direct3D11CaptureFramePool_FrameArrived;                
+            _direct3D11CaptureFramePool.FrameArrived += MainWindow._direct3D11CaptureFramePool_FrameArrived;                
             _graphicsCaptureSession = _direct3D11CaptureFramePool.CreateCaptureSession(_captureItem);
             _graphicsCaptureSession.StartCapture();
                 
@@ -204,11 +193,11 @@ namespace CToC.Screen
         
         private  void _direct3D11CaptureFramePool_FrameArrived(Direct3D11CaptureFramePool sender, object args)
         {
-            using (var frame = sender.TryGetNextFrame())
+            using (var Frame = sender.TryGetNextFrame())
             {
-                if (frame != null)
+                if (Frame != null)
                 {
-                  
+                   // Debug.WriteLine();
                 }
             }
 

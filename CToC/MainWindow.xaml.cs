@@ -2,44 +2,32 @@
 using CToC.Mouse;
 using CToC.Screen;
 using CToC.Server;
-using DevExpress.DirectX.NativeInterop.DXGI;
-using DevExpress.DirectX.StandardInterop.Direct3D;
-using DevExpress.Utils.Filtering;
-using Microsoft.VisualBasic.Devices;
+using Microsoft.Graphics.Canvas;
+using Microsoft.Graphics.Canvas.UI.Xaml;
 using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Net;
-using System.Net.NetworkInformation;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Documents;
+
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using Vortice.Mathematics;
-using Windows.Graphics;
 using Windows.Graphics.Capture;
-using Windows.Graphics.DirectX;
-using Windows.Graphics.DirectX.Direct3D11;
-using Windows.Media.Capture;
+using Windows.Graphics.Imaging;
 using Windows.System;
-using Windows.UI.Composition;
-using WindowsInput;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
+
 using Point = System.Windows.Point;
 
 namespace CToC
 {
 
 
-    public partial class MainWindow :System.Windows.Window
+    public  partial class MainWindow :System.Windows.Window
     {
         TcpServer Server = new();
         private static IntPtr _hookID = IntPtr.Zero;
@@ -60,7 +48,7 @@ namespace CToC
         private int ScreenY = SystemInformation.VirtualScreen.Y;
         TakeScreenSnippit screenDisplay;
         private IntPtr Handle;
-
+        
         FrameCapture capturedFrame = new();
         public static event Action? EndServerConnection;
         public MainWindow()
@@ -85,7 +73,7 @@ namespace CToC
             }
             ).Start();
 
-            capturedFrame.Dispose();
+            
         }
 
 
@@ -113,9 +101,25 @@ namespace CToC
         private void PC2Disconnect()
         {
             this.Close();
+            
+           
 
         }
+        
+        public async static void _direct3D11CaptureFramePool_FrameArrived(Direct3D11CaptureFramePool sender, object args)
+        {
+            DispatcherQueueController dispatcherQueue = DispatcherQueueController.CreateOnDedicatedThread();
 
+            using (var Frame = sender.TryGetNextFrame())
+            {
+                if (Frame != null)
+                {
+                    var softwareBitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(Frame.Surface);
+                    
+                }
+            }
+
+        }
         private IPAddress GetIPAddress()
         {
             var dns = Dns.GetHostEntry(Dns.GetHostName());
@@ -250,6 +254,7 @@ namespace CToC
         {
             //EndClientConnection?.Invoke();
             //EndServerConnection?.Invoke();
+            capturedFrame.Dispose();
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)

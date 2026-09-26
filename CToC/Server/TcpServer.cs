@@ -1,6 +1,7 @@
 ﻿using CToC.Mouse;
 using CToC.Screen;
-using Microsoft.VisualBasic.Devices;
+using Microsoft.Graphics.Canvas;
+using Microsoft.Graphics.Canvas.UI.Xaml;
 using System.Diagnostics;
 using System.Globalization;
 using System.Net;
@@ -9,10 +10,14 @@ using System.Printing;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
 using Vortice.Mathematics.PackedVector;
+using Windows.Graphics.Capture;
+using Windows.Graphics.DirectX.Direct3D11;
+using Windows.Media.Capture;
 using WindowsInput;
 using Point = System.Windows.Point;
 namespace CToC.Server
@@ -191,9 +196,10 @@ namespace CToC.Server
             public int Height;
             public byte[] FramByte;
             public MouseButtonState mousestate;
+            public IDirect3DSurface surface;
 
         };
-        byte[] getBytesOfTCPMessage(TCPMessage str)
+        static byte[] getBytesOfTCPMessage(TCPMessage str)
         {
             int size = Marshal.SizeOf(str);
 
@@ -213,7 +219,27 @@ namespace CToC.Server
             }
             return arr;
         }
-        TCPMessage fromBytes(byte[] arr)
+        static byte[]  getBytesOfFrame(IDirect3DSurface str)
+        {
+            int size = Marshal.SizeOf(str);
+
+            byte[] arr = new byte[255];
+            Array.Resize(ref arr, size);
+
+            IntPtr ptr = IntPtr.Zero;
+            try
+            {
+                ptr = Marshal.AllocHGlobal(size);
+                Marshal.StructureToPtr(str, ptr, false);
+                Marshal.Copy(ptr, arr, 0, size);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(ptr);
+            }
+            return arr;
+        }
+        TCPMessage  fromBytes(byte[] arr)
         {
             TCPMessage str = new TCPMessage();
 
@@ -314,6 +340,21 @@ namespace CToC.Server
            // if (Client != null)
                // Client.Close();
         }
-    
+        public static void _direct3D11CaptureFramePool_FrameArrived(Direct3D11CaptureFramePool sender, object args)
+        {
+            using (var Frame = sender.TryGetNextFrame())
+            {
+                if (Frame != null)
+                {
+                    var f = FrameCapture.GetDirectdevice();
+                    CanvasControl canvasControl = new();
+                    var dev = canvasControl.Device;
+                    ICanvasResourceCreator de = dev;
+                    CanvasBitmap canvasBitmap = CanvasBitmap.CreateFromDirect3D11Surface(de, Frame.Surface);
+                    Debug.WriteLine(canvasBitmap.Bounds.Left);
+                }
+            }
+
+        }
     }
 }
