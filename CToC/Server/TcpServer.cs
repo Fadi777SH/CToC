@@ -60,7 +60,6 @@ namespace CToC.Server
                     MainWindow.MouseChange += MouseChangepos;
                     MainWindow.MousePressEvent += MousePressedDown;
 
-
                     byte[] Rec = new byte[255];
                     while (true)
                     {
@@ -73,6 +72,7 @@ namespace CToC.Server
                             FrameArrived?.Invoke(Rec);
                         }
                     }
+
                 }
                 catch
                 {
@@ -87,8 +87,7 @@ namespace CToC.Server
 
             }.Start();
 
-
-
+           
             MainWindow.KeyPressEvent -= PressThisKey;
             MainWindow.MouseChange -= MouseChangepos;
             MainWindow.MousePressEvent -= MousePressedDown;
@@ -115,7 +114,7 @@ namespace CToC.Server
             var Serverendpint = new IPEndPoint(IPAddressOfPC2, PORT);
 
 
-            new Task(async () =>
+            new Thread(async delegate ()
             {
                 SentFrameToPC1 += TcpServer_SentFrameToPC1;
             }).Start();
