@@ -130,13 +130,13 @@ namespace CToC.Screen
         }
         public static Bitmap Resizebitmap(Bitmap orgin , int width,int height)
         {
-            Bitmap bitmap = new(40, 40);
-            using(Graphics graphics = Graphics.FromImage(bitmap))
-            {
-                graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                graphics.DrawImage(orgin, 0, 0, width, height);
-                return bitmap;
-            }
+            Bitmap bitmap = new(width, height);
+            using Graphics graphics = Graphics.FromImage(bitmap);
+            
+            graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+            graphics.DrawImage(orgin, 0, 0, width, height);
+            return bitmap;
+            
         }
     }
     public class FrameCapture : IDisposable

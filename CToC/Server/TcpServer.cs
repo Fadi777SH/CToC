@@ -40,7 +40,7 @@ namespace CToC.Server
         public delegate void ShowPic(byte[] bytes);
         public static event ShowPic? FrameArrived;
         public delegate void SentFrameToPC1Handler(Bitmap bitmap);
-        public static event SentFrameToPC1Handler? SentFrameToPC1;
+        public static event SentFrameToPC1Handler? SentFrameToPC2;
 
         public FrameCapture frameCapture=new();
         public async Task Sender(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
@@ -119,7 +119,7 @@ namespace CToC.Server
 
             new Thread(() =>
             {
-                SentFrameToPC1 += TcpServer_SentFrameToPC1;
+                SentFrameToPC2 += TcpServer_SentFrameToPC1;
             }).Start();
 
             while (true)
@@ -186,14 +186,14 @@ namespace CToC.Server
 
         private async void TcpServer_SentFrameToPC1(Bitmap bitmap)
         {
-            using (MemoryStream stream = new())
-            {
+            using MemoryStream stream = new();
+            
 
-                bitmap.Save(stream, ImageFormat.Bmp);
+           bitmap.Save(stream, ImageFormat.Jpeg);
 
-                if (ClientendPoint != null)
-                    Client?.SendToAsync(stream.ToArray(), ClientendPoint);
-            }
+            if (ClientendPoint != null)
+                Client?.SendToAsync(stream.ToArray(), ClientendPoint);
+            
             
         }
 
@@ -359,35 +359,31 @@ namespace CToC.Server
             // if (Client != null)
             // Client.Close();
         }
-
+        public static int frameWidth = 870;
+        public static int frameHeight = 500;
         public async static void _direct3D11CaptureFramePool_FrameArrived(Direct3D11CaptureFramePool sender, object args)
         {
 
-            var Frame = sender.TryGetNextFrame();
+            using var Frame = sender.TryGetNextFrame();
             
             if (Frame != null)
             {
-                var softwareBitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(Frame.Surface);
+                using var softwareBitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(Frame.Surface);
                     
-                var bitmap = await FormSoftwarebitmapTobitmap(softwareBitmap);
+                using var bitmap = await FormSoftwarebitmapTobitmap(softwareBitmap);
+
+                
 
                 if (bitmap != null)
                 {
-                   
+                    using var CompressedBitmap = ConversionClass.compressbitmap(bitmap, frameWidth, frameHeight);
                     try
                     {
-                        //SentFrameToPC1?.Invoke(bitmap); 
+                       SentFrameToPC2?.Invoke(CompressedBitmap); 
                     }
                     catch (Exception ex)
                     {
                         MessageBox.Show(ex.Message);
-                    }
-                    finally
-                    {
-                       // stream?.Dispose();
-                        bitmap?.Dispose();
-                        Frame?.Dispose();
-                        softwareBitmap?.Dispose();
                     }
                 }
                     
@@ -400,47 +396,16 @@ namespace CToC.Server
         private static async Task<Bitmap?> FormSoftwarebitmapTobitmap(SoftwareBitmap softwareBitmap)
         {
 
-            var stream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
+            using var stream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
             
 
             BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.JpegEncoderId, stream);
             encoder.SetSoftwareBitmap(softwareBitmap);
 
-            encoder.BitmapTransform.ScaledWidth = 320;
-            encoder.BitmapTransform.ScaledHeight = 240;
-            encoder.BitmapTransform.Rotation = Windows.Graphics.Imaging.BitmapRotation.Clockwise90Degrees;
-            encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Fant;
-            encoder.IsThumbnailGenerated = true;
             await encoder.FlushAsync();
-           var  bmp = new Bitmap(stream.AsStream());
+            using var  bmp = new Bitmap(stream.AsStream());
 
-            try
-            {
-                
-                SentFrameToPC1?.Invoke(ConversionClass.compressbitmap(bmp,30,30));
-                return bmp;
-            }
-            catch (Exception err)
-            {
-                const int WINCODEC_ERR_UNSUPPORTEDOPERATION = unchecked((int)0x88982F81);
-                switch (err.HResult)
-                {
-                    case WINCODEC_ERR_UNSUPPORTEDOPERATION:
-                        // If the encoder does not support writing a thumbnail, then try again
-                        // but disable thumbnail generation.
-                        encoder.IsThumbnailGenerated = false;
-                        break;
-                    default:
-                        throw;
-                }
-            }
-            finally
-            {
-                bmp?.Dispose();
-                stream?.Dispose();
-
-            }
-            return null;
+            return new(bmp);
             
         }
         

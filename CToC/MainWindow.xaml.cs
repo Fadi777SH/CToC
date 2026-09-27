@@ -49,7 +49,7 @@ namespace CToC
         private int ScreenY = SystemInformation.VirtualScreen.Y;
         TakeScreenSnippit screenDisplay;
         private IntPtr Handle;
-        
+
         FrameCapture capturedFrame = new();
         public static event Action? EndServerConnection;
         public MainWindow()
@@ -72,12 +72,12 @@ namespace CToC
 
         private async void TcpServer_any(byte[] bytes)
         {
-            MemoryStream stream = new MemoryStream(bytes);
+            using MemoryStream stream = new MemoryStream(bytes);
             
-            Bitmap t= new(stream);
+            using Bitmap Bitmap= new(stream);
 
-            var i = ConvertToImageSource(t);
-            this.Dispatcher.Invoke(() => this.Frames.Source = i);
+            var ImageSource = ConvertToImageSource(Bitmap);
+            this.Dispatcher.Invoke(() => this.Frames.Source = ImageSource);
             
 
         }
