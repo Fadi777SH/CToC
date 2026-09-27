@@ -3,11 +3,15 @@
 using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.IO;
+using System.IO.Compression;
 using System.Runtime.InteropServices;
+using System.Windows.Media.Imaging;
 using Windows.Graphics;
 using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX;
 using Windows.Graphics.DirectX.Direct3D11;
+using Windows.Graphics.Imaging;
+using Windows.Storage.Compression;
 using Windows.System;
 using Windows.UI.Composition;
 
@@ -93,6 +97,45 @@ namespace CToC.Screen
             using (MemoryStream stream = new MemoryStream(bytes))
             {
                 return new(stream);
+            }
+        }
+        public static void DataCompress(Bitmap image)
+        {
+            var f = compressbitmap(image, 30, 30);
+            using (MemoryStream s =new MemoryStream())
+            {
+                f.Save(s, ImageFormat.Bmp);
+               // Debug.WriteLine(s.ToArray().Length);
+            }
+        }
+        public static Bitmap compressbitmap(Bitmap image, int targetWidth, int TargetHeight)
+        {
+            int Width = 0;
+            int Height = 0;
+            double AspectRatioOrigin = image.Width / image.Height;
+            double AspectRatio = targetWidth / (double)TargetHeight;
+            if (AspectRatio > AspectRatioOrigin)
+            {
+                Width = (int)(TargetHeight * AspectRatioOrigin);
+                Height = TargetHeight;
+
+            }
+            else
+            {
+                Width = targetWidth;
+                Height = TargetHeight;
+            }
+            return Resizebitmap(image, Width, Height);
+
+        }
+        public static Bitmap Resizebitmap(Bitmap orgin , int width,int height)
+        {
+            Bitmap bitmap = new(40, 40);
+            using(Graphics graphics = Graphics.FromImage(bitmap))
+            {
+                graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                graphics.DrawImage(orgin, 0, 0, width, height);
+                return bitmap;
             }
         }
     }

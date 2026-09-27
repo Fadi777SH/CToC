@@ -151,7 +151,6 @@ namespace CToC
                 }
                 if (btn != null && btn.IsChecked == false)
                 {
-                    capturedFrame.EndStream();
                     EndClientConnection?.Invoke();
                     System.Windows.MessageBox.Show("you disconnect as Client .");
                 }

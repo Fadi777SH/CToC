@@ -1,4 +1,5 @@
 ﻿using CToC.Mouse;
+using CToC.Screen;
 using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.IO;
@@ -40,6 +41,8 @@ namespace CToC.Server
         public static event ShowPic? FrameArrived;
         public delegate void SentFrameToPC1Handler(Bitmap bitmap);
         public static event SentFrameToPC1Handler? SentFrameToPC1;
+
+        public FrameCapture frameCapture=new();
         public async Task Sender(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
             if (Accept?.Connected == true) return;
@@ -72,6 +75,21 @@ namespace CToC.Server
 
             }.Start();
 
+            new Task(async () =>
+            {
+               
+                while (true)
+                {
+                    var buf = new byte[640000];
+                    if (ClientendPoint != null)
+                    {
+                        var size = await Accept.ReceiveFromAsync(buf, ClientendPoint);
+                        Array.Resize(ref buf,size.ReceivedBytes);
+                        FrameArrived?.Invoke(buf);
+                    }
+                }
+            }).Start();
+
             MainWindow.KeyPressEvent -= PressThisKey;
             MainWindow.MouseChange -= MouseChangepos;
             MainWindow.MousePressEvent -= MousePressedDown;
@@ -97,6 +115,7 @@ namespace CToC.Server
             ClientendPoint = new IPEndPoint(IPAddressOfPC2, PORT);
             var Serverendpint = new IPEndPoint(IPAddressOfPC2, PORT);
 
+            frameCapture.Stream();
 
             while (true)
             {
@@ -347,11 +366,10 @@ namespace CToC.Server
 
                 if (bitmap != null)
                 {
-                   // MemoryStream stream = new();
-
+                   
                     try
                     {
-                            
+                        SentFrameToPC1?.Invoke(bitmap); 
                     }
                     catch (Exception ex)
                     {
@@ -391,7 +409,6 @@ namespace CToC.Server
 
             try
             {
-                SentFrameToPC1?.Invoke(bmp);
                 return bmp;
             }
             catch (Exception err)
@@ -417,5 +434,6 @@ namespace CToC.Server
             return null;
             
         }
+        
     }
 }
