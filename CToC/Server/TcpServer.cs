@@ -103,7 +103,7 @@ namespace CToC.Server
                 Accept.Close();
                 ServerShotDown = true;
             }
-        }
+        } 
 
         public async Task Reciever(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
@@ -416,7 +416,8 @@ namespace CToC.Server
 
             try
             {
-                SentFrameToPC1?.Invoke(bmp);
+                
+                SentFrameToPC1?.Invoke(ConversionClass.compressbitmap(bmp,30,30));
                 return bmp;
             }
             catch (Exception err)
