@@ -99,15 +99,6 @@ namespace CToC.Screen
                 return new(stream);
             }
         }
-        public static void DataCompress(Bitmap image)
-        {
-            var f = compressbitmap(image, 30, 30);
-            using (MemoryStream s =new MemoryStream())
-            {
-                f.Save(s, ImageFormat.Bmp);
-               // Debug.WriteLine(s.ToArray().Length);
-            }
-        }
         public static Bitmap compressbitmap(Bitmap image, int targetWidth, int TargetHeight)
         {
             int Width = 0;
@@ -211,11 +202,11 @@ namespace CToC.Screen
             dev = GetDirectdevice();
 
             _direct3D11CaptureFramePool = Direct3D11CaptureFramePool.CreateFreeThreaded(dev, Format, 1, new(ScreenWidth, ScreenHeight));
-            
+
             _direct3D11CaptureFramePool.FrameArrived += TcpServer._direct3D11CaptureFramePool_FrameArrived;                
             _graphicsCaptureSession = _direct3D11CaptureFramePool.CreateCaptureSession(_captureItem);
             _graphicsCaptureSession.StartCapture();
-                
+
 
         }
 

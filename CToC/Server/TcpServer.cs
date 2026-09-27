@@ -12,6 +12,7 @@ using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX.Direct3D11;
 using Windows.Graphics.Imaging;
 using Windows.Media.Capture;
+using Windows.Storage.Streams;
 using WindowsInput;
 using Point = System.Windows.Point;
 namespace CToC.Server
@@ -361,25 +362,32 @@ namespace CToC.Server
         }
         public static int frameWidth = 870;
         public static int frameHeight = 500;
+        
         public async static void _direct3D11CaptureFramePool_FrameArrived(Direct3D11CaptureFramePool sender, object args)
         {
+            Stopwatch stopwatch = new();
+            stopwatch.Start();
 
             using var Frame = sender.TryGetNextFrame();
             
             if (Frame != null)
             {
+                
                 using var softwareBitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(Frame.Surface);
-                    
+
                 using var bitmap = await FormSoftwarebitmapTobitmap(softwareBitmap);
 
-                
+                stopwatch.Stop();
+                Debug.WriteLine(stopwatch.ElapsedMilliseconds);
 
                 if (bitmap != null)
                 {
                     using var CompressedBitmap = ConversionClass.compressbitmap(bitmap, frameWidth, frameHeight);
                     try
                     {
-                       SentFrameToPC2?.Invoke(CompressedBitmap); 
+                       SentFrameToPC2?.Invoke(CompressedBitmap);
+
+
                     }
                     catch (Exception ex)
                     {
@@ -391,21 +399,23 @@ namespace CToC.Server
             
 
         }
-    
+        //static InMemoryRandomAccessStream stream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
+        //static BitmapEncoder encoder;
 
         private static async Task<Bitmap?> FormSoftwarebitmapTobitmap(SoftwareBitmap softwareBitmap)
         {
 
-            using var stream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
-            
 
+            InMemoryRandomAccessStream stream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
+           
             BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.JpegEncoderId, stream);
+
             encoder.SetSoftwareBitmap(softwareBitmap);
-
+           
             await encoder.FlushAsync();
-            using var  bmp = new Bitmap(stream.AsStream());
+           
+            return new Bitmap(stream.AsStream());
 
-            return new(bmp);
             
         }
         
