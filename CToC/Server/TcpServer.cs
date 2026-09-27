@@ -188,11 +188,13 @@ namespace CToC.Server
         {
             using (MemoryStream stream = new())
             {
+
                 bitmap.Save(stream, ImageFormat.Bmp);
 
                 if (ClientendPoint != null)
                     Client?.SendToAsync(stream.ToArray(), ClientendPoint);
             }
+            
         }
 
         enum MessageType
@@ -374,7 +376,7 @@ namespace CToC.Server
                    
                     try
                     {
-                        SentFrameToPC1?.Invoke(bitmap); 
+                        //SentFrameToPC1?.Invoke(bitmap); 
                     }
                     catch (Exception ex)
                     {
@@ -414,6 +416,7 @@ namespace CToC.Server
 
             try
             {
+                SentFrameToPC1?.Invoke(bmp);
                 return bmp;
             }
             catch (Exception err)
