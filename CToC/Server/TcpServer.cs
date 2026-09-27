@@ -117,6 +117,11 @@ namespace CToC.Server
 
             frameCapture.Stream();
 
+            new Thread(() =>
+            {
+                SentFrameToPC1 += TcpServer_SentFrameToPC1;
+            }).Start();
+
             while (true)
             {
 
