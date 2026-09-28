@@ -12,6 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="BinaryFormatter" Version="3.0.0" />
     <PackageReference Include="ImageResizer" Version="4.2.8" />
     <PackageReference Include="InputSimulator" Version="1.0.4" />
     <PackageReference Include="Microsoft.Graphics.Win2D" Version="1.4.0" />

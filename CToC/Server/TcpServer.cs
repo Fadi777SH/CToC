@@ -122,7 +122,7 @@ namespace CToC.Server
             {
                 SentFrameToPC2 += TcpServer_SentFrameToPC1;
             }).Start();
-
+            PC2DisConnect += disconnectClient;
             while (true)
             {
 
@@ -189,8 +189,12 @@ namespace CToC.Server
         {
             using MemoryStream stream = new();
             
+            bitmap.Save(stream, ImageFormat.Jpeg);
 
-           bitmap.Save(stream, ImageFormat.Jpeg);
+            if(stream.Length >= 640000)
+            {
+                MessageBox.Show("you acceed the limit of the message");
+            }
 
             if (ClientendPoint != null)
                 Client?.SendToAsync(stream.ToArray(), ClientendPoint);
@@ -239,8 +243,11 @@ namespace CToC.Server
             }
             return arr;
         }
-        static byte[] getBytesOfFrame(IDirect3DSurface str)
+        static byte[] getBytesOfFrame(Direct3DSurfaceDescription str)
         {
+            
+
+            
             int size = Marshal.SizeOf(str);
 
             byte[] arr = new byte[255];
@@ -357,34 +364,47 @@ namespace CToC.Server
 
         public void disconnectClient()
         {
-            // if (Client != null)
-            // Client.Close();
+            if (Client != null)
+            {
+                Client.Close();
+            }
+            if (frameCapture.IsStreaming==true)
+            {
+                frameCapture.EndStream();
+                
+            }
         }
         public static int frameWidth = 870;
         public static int frameHeight = 500;
-        
+        static Stopwatch stopwatch = new();
         public async static void _direct3D11CaptureFramePool_FrameArrived(Direct3D11CaptureFramePool sender, object args)
         {
-            Stopwatch stopwatch = new();
-            stopwatch.Start();
+
 
             using var Frame = sender.TryGetNextFrame();
             
             if (Frame != null)
             {
-                
+
+
+
+                ConversionClass.ClassToByteArray(Frame);
                 using var softwareBitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(Frame.Surface);
 
                 using var bitmap = await FormSoftwarebitmapTobitmap(softwareBitmap);
 
-                stopwatch.Stop();
-                Debug.WriteLine(stopwatch.ElapsedMilliseconds);
+                //var FrameBytes = getBytesOfFrame(Frame.Surface.Description);
+                
+                
+
 
                 if (bitmap != null)
                 {
                     using var CompressedBitmap = ConversionClass.compressbitmap(bitmap, frameWidth, frameHeight);
+
                     try
                     {
+                        
                        SentFrameToPC2?.Invoke(CompressedBitmap);
 
 
