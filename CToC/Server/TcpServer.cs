@@ -8,6 +8,7 @@ using System.Net.Sockets;
 using System.Printing;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
+using System.Windows.Interop;
 using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX.Direct3D11;
 using Windows.Graphics.Imaging;
@@ -19,9 +20,9 @@ namespace CToC.Server
 {
     public class TcpServer
     {
-        Socket? Accept;
+        public Socket? Accept;
         InputSimulator? inputsime;
-        Socket? Client;
+        public Socket? Client;
         int PORT = 22;
         private int ScreenX = SystemInformation.VirtualScreen.X;
         private int ScreenY = SystemInformation.VirtualScreen.Y;
@@ -86,7 +87,16 @@ namespace CToC.Server
                     {
                         var size = await Accept.ReceiveFromAsync(buf, ClientendPoint);
                         Array.Resize(ref buf,size.ReceivedBytes);
-                        FrameArrived?.Invoke(buf);
+                        var MSG = FromByteArrayToUDPMessage(buf);
+                        if (MSG.type == MessageType.Fram)
+                        {
+                            FrameArrived?.Invoke(MSG.FramByte);
+                        }
+                        else if (MSG.type == MessageType.Error)
+                        {
+                            MessageBox.Show(MSG.ErrorMessage);
+                            break;
+                        }
                     }
                 }
             }).Start();
@@ -136,7 +146,7 @@ namespace CToC.Server
                     var size =await Client.ReceiveFromAsync(RecievedByte, Serverendpint);
                     Array.Resize(ref RecievedByte, size.ReceivedBytes);
 
-                    TCPMessage MSG = fromBytes(RecievedByte);
+                    UDPMessage MSG = FromByteArrayToUDPMessage(RecievedByte);
                     if (MSG.type == MessageType.Keyboard)
                     {
                         int vk = KeyInterop.VirtualKeyFromKey(MSG.key);
@@ -197,7 +207,11 @@ namespace CToC.Server
             }
 
             if (ClientendPoint != null)
-                Client?.SendToAsync(stream.ToArray(), ClientendPoint);
+            {
+                UDPMessage MSG = new UDPMessage { type = MessageType.Fram, FramByte = stream.ToArray() };
+                
+                Client?.SendToAsync(getBytesOfUDPMessage(MSG), ClientendPoint);
+            }
             
             
         }
@@ -209,11 +223,13 @@ namespace CToC.Server
             point,
             MouseWheel,
             Fram,
+            Error,
         }
-        struct TCPMessage
+        struct UDPMessage
         {
             public MessageType type;
             public Key key;
+            public string ErrorMessage;
             public System.Windows.Input.MouseButton MouseSide;
             public System.Windows.Point point;
             public int Width;
@@ -223,7 +239,7 @@ namespace CToC.Server
             public IDirect3DSurface surface;
 
         };
-        static byte[] getBytesOfTCPMessage(TCPMessage str)
+        static byte[] getBytesOfUDPMessage(UDPMessage str)
         {
             int size = Marshal.SizeOf(str);
 
@@ -266,9 +282,9 @@ namespace CToC.Server
             }
             return arr;
         }
-        TCPMessage fromBytes(byte[] arr)
+        UDPMessage FromByteArrayToUDPMessage(byte[] arr)
         {
-            TCPMessage str = new TCPMessage();
+            UDPMessage str = new UDPMessage();
 
             int size = Marshal.SizeOf(str);
             IntPtr ptr = IntPtr.Zero;
@@ -278,7 +294,7 @@ namespace CToC.Server
 
                 Marshal.Copy(arr, 0, ptr, size);
 
-                str = (TCPMessage)Marshal.PtrToStructure(ptr, str.GetType());
+                str = (UDPMessage)Marshal.PtrToStructure(ptr, str.GetType());
             }
             finally
             {
@@ -289,7 +305,7 @@ namespace CToC.Server
         public async void PressThisKey(Key key)
         {
 
-            TCPMessage MSG = new();
+            UDPMessage MSG = new();
 
 
             MSG.type = MessageType.Keyboard;
@@ -297,26 +313,26 @@ namespace CToC.Server
             MSG.point = new System.Windows.Point(0, 0);
             MSG.mousestate = MouseButtonState.Pressed;
             MSG.MouseSide = System.Windows.Input.MouseButton.Left;
-            byte[] bytes = getBytesOfTCPMessage(MSG);
+            byte[] bytes = getBytesOfUDPMessage(MSG);
             if (Accept != null && ServerShotDown == false)
                 await Accept.SendToAsync(bytes, ClientendPoint);
         }
 
         public void FrameMessage(ref byte[] StoreByte, byte[] bytes, int w, int h)
         {
-            TCPMessage MSG = new();
+            UDPMessage MSG = new();
             MSG.type = MessageType.Fram;
 
             MSG.Width = w;
             MSG.Height = h;
             MSG.FramByte = bytes;
-            var send = getBytesOfTCPMessage(MSG);
+            var send = getBytesOfUDPMessage(MSG);
             send = StoreByte;
         }
         public async void MouseChangepos(System.Windows.Point portion)
         {
 
-            TCPMessage MSG = new();
+            UDPMessage MSG = new();
 
 
             MSG.type = MessageType.point;
@@ -327,7 +343,7 @@ namespace CToC.Server
             MSG.MouseSide = System.Windows.Input.MouseButton.Left;
             MSG.mousestate = MouseButtonState.Pressed;
 
-            byte[] bytes = getBytesOfTCPMessage(MSG);
+            byte[] bytes = getBytesOfUDPMessage(MSG);
             if (Accept != null && ServerShotDown == false)
             {
                 await Accept.SendToAsync(bytes, ClientendPoint);
@@ -337,7 +353,7 @@ namespace CToC.Server
         public async void MousePressedDown(System.Windows.Input.MouseButton mouseside, MouseButtonState state)
         {
 
-            TCPMessage MSG = new();
+            UDPMessage MSG = new();
 
 
             MSG.type = MessageType.MouseChange;
@@ -345,7 +361,7 @@ namespace CToC.Server
             MSG.point = new(0, 0);
             MSG.MouseSide = mouseside;
             MSG.mousestate = state;
-            byte[] bytes = getBytesOfTCPMessage(MSG);
+            byte[] bytes = getBytesOfUDPMessage(MSG);
 
 
             if (Accept != null && ServerShotDown == false)
@@ -434,6 +450,15 @@ namespace CToC.Server
 
             
         }
-        
+        public void Appclosed()
+        {
+            UDPMessage MSG = new();
+            MSG.ErrorMessage = "Disconnect from the remote computer";
+            MSG.type = MessageType.Error;
+            var B = getBytesOfUDPMessage(MSG);
+            Client?.SendToAsync(B, ClientendPoint);
+        }
+
+
     }
 }

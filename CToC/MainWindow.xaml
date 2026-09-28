@@ -52,7 +52,7 @@
                     MouseMove="PC2Fram_MouseMove"
                     MouseLeftButtonDown="PC2Fram_MouseLeftButtonDown"
                     MouseRightButtonDown="PC2Fram_MouseRightButtonDown"
-                    Background="#FF332727" VerticalAlignment="Stretch" >
+                    Background="Black" VerticalAlignment="Stretch" >
                 <Image Name="Frames" Width="870" Height="500" Source="{Binding}"/>
             </Border>
 

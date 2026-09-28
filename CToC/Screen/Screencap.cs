@@ -117,7 +117,7 @@ namespace CToC.Screen
                 Width = targetWidth;
                 Height = TargetHeight;
             }
-            return Resizebitmap(image, Width, Height);
+            return Resizebitmap(image, 800, 500);
 
         }
         public static Bitmap Resizebitmap(Bitmap orgin , int width,int height)
@@ -125,7 +125,7 @@ namespace CToC.Screen
             Bitmap bitmap = new(width, height);
             using Graphics graphics = Graphics.FromImage(bitmap);
             
-            graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+            graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.High;
             graphics.DrawImage(orgin, 0, 0, width, height);
             return bitmap;
             

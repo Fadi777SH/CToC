@@ -258,8 +258,7 @@ namespace CToC
 
         private void Window_Closed(object sender, EventArgs e)
         {
-            //EndClientConnection?.Invoke();
-            //EndServerConnection?.Invoke();
+            Server.Appclosed();
             capturedFrame.Dispose();
         }
 
