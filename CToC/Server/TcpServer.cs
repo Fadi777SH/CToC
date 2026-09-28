@@ -87,16 +87,17 @@ namespace CToC.Server
                     {
                         var size = await Accept.ReceiveFromAsync(buf, ClientendPoint);
                         Array.Resize(ref buf,size.ReceivedBytes);
-                        var MSG = FromByteArrayToUDPMessage(buf);
-                        if (MSG.type == MessageType.Fram)
-                        {
-                            FrameArrived?.Invoke(MSG.FramByte);
-                        }
-                        else if (MSG.type == MessageType.Error)
-                        {
-                            MessageBox.Show(MSG.ErrorMessage);
-                            break;
-                        }
+                        FrameArrived?.Invoke(buf);
+                        //var MSG = FromByteArrayToUDPMessage(buf);
+                        //if (MSG.type == MessageType.Fram)
+                        //{
+                        //  FrameArrived?.Invoke(MSG.FramByte);
+                        //}
+                        //else if (MSG.type == MessageType.Error)
+                        //{
+                        //  MessageBox.Show(MSG.ErrorMessage);
+                        //break;
+                        //}
                     }
                 }
             }).Start();
@@ -203,14 +204,14 @@ namespace CToC.Server
 
             if(stream.Length >= 640000)
             {
-                MessageBox.Show("you acceed the limit of the message");
+                MessageBox.Show("you acceed the length limit of the message");
             }
 
             if (ClientendPoint != null)
             {
-                UDPMessage MSG = new UDPMessage { type = MessageType.Fram, FramByte = stream.ToArray() };
+               // UDPMessage MSG = new UDPMessage { type = MessageType.Fram, FramByte = stream.ToArray() };
                 
-                Client?.SendToAsync(getBytesOfUDPMessage(MSG), ClientendPoint);
+                Client?.SendToAsync(stream.ToArray(), ClientendPoint);
             }
             
             
@@ -373,8 +374,8 @@ namespace CToC.Server
         }
         private Point GetPC2MousePos(Point portion)
         {
-            var Xpoint = (portion.X / 100) * ScreenWidth + ABSX;
-            var Ypoint = (portion.Y / 100) * ScreenHeight + ABSY;
+            var Xpoint = (portion.X / 100) * ScreenWidth ;
+            var Ypoint = (portion.Y / 100) * ScreenHeight ;
             return new(Xpoint, Ypoint);
         }
 

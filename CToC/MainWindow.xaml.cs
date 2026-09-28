@@ -72,16 +72,14 @@ namespace CToC
 
         private async void TcpServer_DisplayFrame(byte[] bytes)
         {
-            Stopwatch s = new();
-            s.Start();
+
             using MemoryStream stream = new MemoryStream(bytes);
             
             using Bitmap Bitmap= new(stream);
 
             var ImageSource = ConvertToImageSource(Bitmap);
             this.Dispatcher.Invoke(() => this.Frames.Source = ImageSource);
-            s.Stop();
-            Debug.WriteLine(s.ElapsedMilliseconds);
+
 
         }
 
@@ -231,7 +229,7 @@ namespace CToC
 
             var PercentofXfarFromTheABS = ((point.X - ABSpointofthefram.X) / Width) * 100;
             var PercentofYfarFromTheABS = ((point.Y - ABSpointofthefram.Y) / height) * 100;
-
+            Debug.WriteLine(new Point(PercentofXfarFromTheABS, PercentofYfarFromTheABS));
             return new(PercentofXfarFromTheABS, PercentofYfarFromTheABS);
         }
 

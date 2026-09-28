@@ -100,6 +100,8 @@ namespace CToC.Screen
                 return new(stream);
             }
         }
+        public static int frameWidth = 870;
+        public static int frameHeight = 500;
         public static Bitmap compressbitmap(Bitmap image, int targetWidth, int TargetHeight)
         {
             int Width = 0;
@@ -117,7 +119,7 @@ namespace CToC.Screen
                 Width = targetWidth;
                 Height = TargetHeight;
             }
-            return Resizebitmap(image, 800, 500);
+            return Resizebitmap(image, frameWidth, frameHeight);
 
         }
         public static Bitmap Resizebitmap(Bitmap orgin , int width,int height)
