@@ -18,7 +18,7 @@ using WindowsInput;
 using Point = System.Windows.Point;
 namespace CToC.Server
 {
-    public class TcpServer
+    public class UdpServer
     {
         public Socket? Accept;
         InputSimulator? inputsime;
@@ -45,6 +45,9 @@ namespace CToC.Server
         public static event SentFrameToPC1Handler? SentFrameToPC2;
 
         public FrameCapture frameCapture=new();
+
+        private bool ContinueSend = true;
+        private bool ContinueRecive = true;
         public async Task Sender(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
             if (Accept?.Connected == true) return;
@@ -57,11 +60,12 @@ namespace CToC.Server
             {
                 try
                 {
-
-                    MainWindow.EndServerConnection += MainWindow_EndServerConnection;
-                    MainWindow.KeyPressEvent += PressThisKey;
-                    MainWindow.MouseChange += MouseChangepos;
-                    MainWindow.MousePressEvent += MousePressedDown;
+                    if (ContinueSend)
+                    {
+                        MainWindow.KeyPressEvent += PressThisKey;
+                        MainWindow.MouseChange += MouseChangepos;
+                        MainWindow.MousePressEvent += MousePressedDown;
+                    }
                     
                 }
                 catch
@@ -80,11 +84,12 @@ namespace CToC.Server
             new Task(async () =>
             {
                
-                while (true)
+                while (ContinueRecive)
                 {
                     var buf = new byte[640000];
                     if (ClientendPoint != null)
                     {
+                        try { 
                         var size = await Accept.ReceiveFromAsync(buf, ClientendPoint);
                         Array.Resize(ref buf,size.ReceivedBytes);
                         FrameArrived?.Invoke(buf);
@@ -98,24 +103,15 @@ namespace CToC.Server
                         //  MessageBox.Show(MSG.ErrorMessage);
                         //break;
                         //}
+                        }
+                        catch(Exception ex)
+                        {
+                            MessageBox.Show(ex.Message);
+                        }
                     }
                 }
             }).Start();
-
-            MainWindow.KeyPressEvent -= PressThisKey;
-            MainWindow.MouseChange -= MouseChangepos;
-            MainWindow.MousePressEvent -= MousePressedDown;
-            MainWindow.EndServerConnection -= MainWindow_EndServerConnection;
         }
-
-        private void MainWindow_EndServerConnection()
-        {
-            if (Accept != null && ServerShotDown == false)
-            {
-                Accept.Close();
-                ServerShotDown = true;
-            }
-        } 
 
         public async Task Reciever(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
@@ -131,10 +127,11 @@ namespace CToC.Server
 
             new Thread(() =>
             {
+                if(ContinueSend)
                 SentFrameToPC2 += TcpServer_SentFrameToPC1;
             }).Start();
-            PC2DisConnect += disconnectClient;
-            while (true)
+  
+            while (ContinueRecive)
             {
 
 
@@ -379,21 +376,10 @@ namespace CToC.Server
             return new(Xpoint, Ypoint);
         }
 
-        public void disconnectClient()
-        {
-            if (Client != null)
-            {
-                Client.Close();
-            }
-            if (frameCapture.IsStreaming==true)
-            {
-                frameCapture.EndStream();
-                
-            }
-        }
+
         public static int frameWidth = 870;
         public static int frameHeight = 500;
-        static Stopwatch stopwatch = new();
+   
         public async static void _direct3D11CaptureFramePool_FrameArrived(Direct3D11CaptureFramePool sender, object args)
         {
 
@@ -404,7 +390,7 @@ namespace CToC.Server
             {
 
 
-
+               // ConversionClass.ClassToByteArray(Frame.Surface);
 
                 using var softwareBitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(Frame.Surface);
 
@@ -459,7 +445,31 @@ namespace CToC.Server
             var B = getBytesOfUDPMessage(MSG);
             Client?.SendToAsync(B, ClientendPoint);
         }
+        public void disconnectClient()
+        {
+            if (Client != null)
+            {
+                ContinueRecive = false;
+                ContinueSend = false;
+                Client.Close();
+            }
+            if (frameCapture.IsStreaming == true)
+            {
+                frameCapture.EndStream();
 
-
+            }
+        }
+        public void disconnectAccepter()
+        {
+            if (Accept != null)
+            {
+                ContinueSend = false;
+                ContinueRecive = false;
+                Accept.Close();
+            }
+            MainWindow.KeyPressEvent -= PressThisKey;
+            MainWindow.MouseChange -= MouseChangepos;
+            MainWindow.MousePressEvent -= MousePressedDown;
+        }
     }
 }

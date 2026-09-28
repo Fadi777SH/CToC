@@ -53,7 +53,7 @@
                     MouseLeftButtonDown="PC2Fram_MouseLeftButtonDown"
                     MouseRightButtonDown="PC2Fram_MouseRightButtonDown"
                     Background="CadetBlue" >
-                <Image Name="Frames"  Source="{Binding}" />
+                <Image Name="Frames"  Source="{Binding}" Margin="0,0,9,19" />
             </Border>
 
             <ToggleButton Grid.Column="2" Name="PC2ToPC1" Style="{StaticResource ToggelBtnStyle}" Click="PC2ToPC1Checked"/>

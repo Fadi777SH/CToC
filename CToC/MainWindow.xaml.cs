@@ -30,7 +30,7 @@ namespace CToC
 
     public  partial class MainWindow :System.Windows.Window
     {
-        TcpServer Server = new();
+        UdpServer Server = new();
         private static IntPtr _hookID = IntPtr.Zero;
         public delegate void MouseChangeHandler(System.Windows.Point point);
 
@@ -50,7 +50,7 @@ namespace CToC
         TakeScreenSnippit screenDisplay;
         private IntPtr Handle;
 
-        FrameCapture capturedFrame = new();
+     
         public static event Action? EndServerConnection;
         public MainWindow()
         {
@@ -59,14 +59,14 @@ namespace CToC
             DataContext = this;
 
 
-            this._IPAddress = GetIPAddress().ToString();
+            this.ThisPCIPAddress = GetIPAddress().ToString();
 
 
             Handle = new WindowInteropHelper(this).Handle;
 
 
-            TcpServer.PC2DisConnect += PC2Disconnect;
-            TcpServer.FrameArrived += TcpServer_DisplayFrame;
+
+            UdpServer.FrameArrived += TcpServer_DisplayFrame;
             
         }
 
@@ -102,16 +102,17 @@ namespace CToC
             }
         }
 
-        public string _IPAddress { get; set; }
-
-        private void PC2Disconnect()
+        public string _IPAddress
         {
-            this.Close();
-            
-           
+            get
+            {
+                return ThisPCIPAddress;
+            }
+        } 
 
-        }
-       
+
+        private string ThisPCIPAddress { get; set; }
+
         private IPAddress GetIPAddress()
         {
             var dns = Dns.GetHostEntry(Dns.GetHostName());
@@ -145,21 +146,40 @@ namespace CToC
             {
                 IPAddress ipofpc1 = IPAddress.Parse(_IPAddress);
                 IPAddress ipofpc2 = IPAddress.Parse(this.PasswordOfController.Text);
+               
                 if (btn != null && btn.IsChecked == true)
                 {
-                    Server?.Reciever(ipofpc1, ipofpc2);
-                    capturedFrame.Stream();
+                    if (PC1ToPC2.IsChecked == false && (ipofpc1.ToString() != ipofpc2.ToString()))
+                    {
+                        Server?.Reciever(ipofpc1, ipofpc2);
+                    }
+                    else
+                    {
+                        if (ipofpc1.ToString() == ipofpc2.ToString())
+                        {
+                            System.Windows.MessageBox.Show("you can't connect to the same IP of your computer");
+                        }
+                        if (PC1ToPC2.IsChecked == true)
+                        {
+                            System.Windows.MessageBox.Show("you can't be a reciver and a remote at the same time");
+                        }
+
+
+                        
+                        btn.IsChecked = false;
+                    }
                 }
-                if (btn != null && btn.IsChecked == false)
+                else if(btn != null && btn.IsChecked == false)
                 {
-                    EndClientConnection?.Invoke();
-                    System.Windows.MessageBox.Show("you disconnect as Client .");
+                    Server.disconnectClient();
+                    System.Windows.MessageBox.Show("you disconnect as a remote");
                 }
             }
-            
+
             catch (Exception ex)
             {
                 System.Windows.MessageBox.Show($"Invalid IP type . \n {ex.Message}");
+                btn?.IsChecked = false;
             }
         }
 
@@ -172,20 +192,37 @@ namespace CToC
                 IPAddress ipofpc1 = IPAddress.Parse(_IPAddress);
                 IPAddress ipofpc2 = IPAddress.Parse(this.PasswordOfSender.Text);
 
-                if (btn != null && btn.IsChecked == true)
+                if (btn?.IsChecked == true)
                 {
-                    Server?.Sender(ipofpc1, ipofpc2);
-                    
+                    if (PC2ToPC1?.IsChecked == false&&(ipofpc1.ToString() != ipofpc2.ToString()))
+                    {
+                        Server?.Sender(ipofpc1, ipofpc2);
+                    }
+                    else
+                    {
+                        if(ipofpc1.ToString() == ipofpc2.ToString())
+                        {
+                            System.Windows.MessageBox.Show("you can't connect to the same IP of your computer");
+                        }
+                        if (PC2ToPC1?.IsChecked == true)
+                        {
+                            System.Windows.MessageBox.Show("you can't be a reciver and a remote at the same time");
+                        }
+                        
+                        btn.IsChecked = false;
+                    }
+  
                 }
-                if (btn != null && btn.IsChecked == false)
+                else if (btn != null && btn.IsChecked == false)
                 {
-                    EndServerConnection?.Invoke();
-                    System.Windows.MessageBox.Show("you disconnect your Server .");
+                    Server.disconnectAccepter();
+                    System.Windows.MessageBox.Show("you disconnect as a remote");
                 }
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show($"Invalid IP type . \n {ex.Message}");
+                System.Windows.MessageBox.Show($"Invalid IP type .\n {ex.Message}");
+                btn?.IsChecked = false;
             }
         }
 
@@ -229,14 +266,10 @@ namespace CToC
 
             var PercentofXfarFromTheABS = ((point.X - ABSpointofthefram.X) / Width) * 100;
             var PercentofYfarFromTheABS = ((point.Y - ABSpointofthefram.Y) / height) * 100;
-            Debug.WriteLine(new Point(PercentofXfarFromTheABS, PercentofYfarFromTheABS));
+
             return new(PercentofXfarFromTheABS, PercentofYfarFromTheABS);
         }
 
-        private void PC2Fram_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-
-        }
 
         private void PC2Fram_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -257,11 +290,6 @@ namespace CToC
         private void Window_Closed(object sender, EventArgs e)
         {
             Server.Appclosed();
-            capturedFrame.Dispose();
-        }
-
-        private void Window_Loaded(object sender, RoutedEventArgs e)
-        {
 
         }
     }

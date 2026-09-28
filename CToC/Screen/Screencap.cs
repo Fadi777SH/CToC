@@ -133,10 +133,11 @@ namespace CToC.Screen
             
         }
 
-        public static void ClassToByteArray(Direct3D11CaptureFrame str)
+        public static void ClassToByteArray(IDirect3DSurface str)
         {
             BinaryFormatter.BinaryConverter binaryConverter=new();
-
+            var w = binaryConverter.Serialize(str);
+            var f = binaryConverter.Deserialize<IDirect3DSurface>(w);
            // return b;
         }
 
@@ -224,7 +225,7 @@ namespace CToC.Screen
 
                 _direct3D11CaptureFramePool = Direct3D11CaptureFramePool.CreateFreeThreaded(dev, Format, 1, new(ScreenWidth, ScreenHeight));
 
-                _direct3D11CaptureFramePool.FrameArrived += TcpServer._direct3D11CaptureFramePool_FrameArrived;
+                _direct3D11CaptureFramePool.FrameArrived += UdpServer._direct3D11CaptureFramePool_FrameArrived;
                 _graphicsCaptureSession = _direct3D11CaptureFramePool.CreateCaptureSession(_captureItem);
                 _graphicsCaptureSession.StartCapture();
             }
@@ -235,7 +236,7 @@ namespace CToC.Screen
 
         public void EndStream()
         {
-            _direct3D11CaptureFramePool.FrameArrived -= TcpServer._direct3D11CaptureFramePool_FrameArrived;
+            _direct3D11CaptureFramePool.FrameArrived -= UdpServer._direct3D11CaptureFramePool_FrameArrived;
             Dispose();
             CurrentState = false;
         }
