@@ -388,14 +388,12 @@ namespace CToC.Server
 
 
 
-                ConversionClass.ClassToByteArray(Frame);
+
                 using var softwareBitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(Frame.Surface);
 
                 using var bitmap = await FormSoftwarebitmapTobitmap(softwareBitmap);
 
-                //var FrameBytes = getBytesOfFrame(Frame.Surface.Description);
-                
-                
+
 
 
                 if (bitmap != null)
@@ -419,8 +417,6 @@ namespace CToC.Server
             
 
         }
-        //static InMemoryRandomAccessStream stream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
-        //static BitmapEncoder encoder;
 
         private static async Task<Bitmap?> FormSoftwarebitmapTobitmap(SoftwareBitmap softwareBitmap)
         {

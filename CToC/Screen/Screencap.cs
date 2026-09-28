@@ -131,14 +131,11 @@ namespace CToC.Screen
             
         }
 
-        public static byte[] ClassToByteArray(Direct3D11CaptureFrame str)
+        public static void ClassToByteArray(Direct3D11CaptureFrame str)
         {
             BinaryFormatter.BinaryConverter binaryConverter=new();
-            var b= binaryConverter.Serialize(str);
-           
-            var f = binaryConverter.Deserialize<Direct3D11CaptureFrame>(b);
-            Debug.WriteLine(f.GetType());
-            return b;
+
+           // return b;
         }
 
 

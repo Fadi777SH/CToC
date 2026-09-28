@@ -66,19 +66,22 @@ namespace CToC
 
 
             TcpServer.PC2DisConnect += PC2Disconnect;
-            TcpServer.FrameArrived += TcpServer_any;
+            TcpServer.FrameArrived += TcpServer_DisplayFrame;
             
         }
 
-        private async void TcpServer_any(byte[] bytes)
+        private async void TcpServer_DisplayFrame(byte[] bytes)
         {
+            Stopwatch s = new();
+            s.Start();
             using MemoryStream stream = new MemoryStream(bytes);
             
             using Bitmap Bitmap= new(stream);
 
             var ImageSource = ConvertToImageSource(Bitmap);
             this.Dispatcher.Invoke(() => this.Frames.Source = ImageSource);
-            
+            s.Stop();
+            Debug.WriteLine(s.ElapsedMilliseconds);
 
         }
 
