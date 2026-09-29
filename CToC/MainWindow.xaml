@@ -8,27 +8,27 @@
         Title="MainWindow" ResizeMode="NoResize"
         PreviewKeyDown="PC2Fram_PreviewKeyDown"
         Closed="Window_Closed"
-        Width="1000" Height="600" Background="White">
+        Width="1000" Height="600" Background="#FF201D1D">
     <Window.Resources>
         <Style TargetType="ToggleButton" x:Key="ToggelBtnStyle">
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ToggleButton">
-                        <Border x:Name="bord" Width="40" Height="40" BorderThickness="2" BorderBrush="Gray" Background="#FFB4B4B4" CornerRadius="10">
-                            <TextBlock x:Name="text" Text="Off" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        <Border x:Name="bord" Width="40" Height="40" BorderThickness="2" BorderBrush="Red" Background="#FF6A1F1F" CornerRadius="10">
+                            <TextBlock x:Name="text" Foreground="White" Text="Off" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                             <Border.Effect>
                                 <DropShadowEffect Opacity="1" ShadowDepth="1"/>
                             </Border.Effect>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bord" Property="Background" Value="#FFFFDE1A"/>
-                                <Setter TargetName="bord" Property="BorderBrush" Value="#FFF7FF9F"/>
+                                <Setter TargetName="bord" Property="Background" Value="Black"/>
+                                <Setter TargetName="bord" Property="BorderBrush" Value="White"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="text" Property="Text" Value="On"/>
-                                <Setter TargetName="bord" Property="Background" Value="#FFFFDE1A"/>
-                                <Setter TargetName="bord" Property="BorderBrush" Value="#FFF7FF9F"/>
+                                <Setter TargetName="bord" Property="Background" Value="#FF6A1F1F"/>
+                                <Setter TargetName="bord" Property="BorderBrush" Value="White"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -45,33 +45,37 @@
                 <ColumnDefinition Width="0.1*"/>
             </Grid.ColumnDefinitions>
 
-            <Border Grid.Column="0" Background="Beige" VerticalAlignment="Stretch" />
-            <Border Grid.Column="2" Background="Beige" VerticalAlignment="Stretch" />
+            <Border Grid.Column="0" Background="Transparent" VerticalAlignment="Stretch" />
+            <Border Grid.Column="2" Background="Transparent" VerticalAlignment="Stretch" />
             <Border Grid.Column="1"  Margin="0,0,0,0"  Name="PC2Fram" 
                     MouseMove="PC2Fram_MouseMove"
                     MouseLeftButtonDown="PC2Fram_MouseLeftButtonDown"
                     MouseRightButtonDown="PC2Fram_MouseRightButtonDown"
                     MouseWheel="PC2Fram_MouseWheel"
-                    Background="CadetBlue"  >
+                    Background="#FF6A1F1F"  >
                 <Image Name="Frames"  />
             </Border>
 
             <ToggleButton Focusable="False"  Grid.Column="2" Name="PC2ToPC1" Style="{StaticResource ToggelBtnStyle}" Click="PC2ToPC1Checked"/>
             <ToggleButton Focusable="False"  Grid.Column="0" Name="PC1ToPC2" Style="{StaticResource ToggelBtnStyle}" Click="PC1ToPC2Checked"/>
 
-            <TextBlock Grid.Column="0" Height="20" Focusable="False" Margin="0,25,0,255" HorizontalAlignment="Center" Text="Your IP Address" FontFamily="Ebrima" />
-            <TextBlock Grid.Column="2" Height="20" Focusable="False" Margin="0,25,0,255" HorizontalAlignment="Center" Text="Your IP Address" FontFamily="Ebrima" />
-            <TextBlock Grid.Column="2" Height="20" Focusable="False" Margin="0,25,0,220" HorizontalAlignment="Center" Text="{Binding _IPAddress}" FontFamily="Ebrima" />
-            <TextBlock Grid.Column="0" Height="20" Focusable="False" Margin="0,25,0,220" HorizontalAlignment="Center" Text="{Binding _IPAddress}" FontFamily="Ebrima" />
+            <TextBlock Foreground="White" Grid.Column="0" Height="20" Focusable="False" Margin="0,25,0,255" HorizontalAlignment="Center" Text="Your IP Address" FontFamily="Ebrima" />
+            <TextBlock Foreground="White" Grid.Column="2" Height="20" Focusable="False" Margin="0,25,0,255" HorizontalAlignment="Center" Text="Your IP Address" FontFamily="Ebrima" />
+            <TextBlock Foreground="White" Grid.Column="2" Height="20" Focusable="False" Margin="0,25,0,220" HorizontalAlignment="Center" Text="{Binding _IPAddress}" FontFamily="Ebrima" />
+            <TextBlock Foreground="White" Grid.Column="0" Height="20" Focusable="False" Margin="0,25,0,220" HorizontalAlignment="Center" Text="{Binding _IPAddress}" FontFamily="Ebrima" />
 
-            <TextBlock Grid.Column="0" Height="20" Focusable="False" Margin="0,25,0,180" HorizontalAlignment="Center" Text="Second PC IP" FontFamily="Ebrima" />
-            <TextBlock Grid.Column="2" Height="20" Focusable="False" Margin="0,25,0,180" HorizontalAlignment="Center" Text="Second PC IP" FontFamily="Ebrima" />
+            <TextBlock Foreground="White" Grid.Column="0" Height="20" Focusable="False" Margin="0,25,0,180" HorizontalAlignment="Center" Text="Second PC IP" FontFamily="Ebrima" />
+            <TextBlock Foreground="White" Grid.Column="2" Height="20" Focusable="False" Margin="0,25,0,180" HorizontalAlignment="Center" Text="Second PC IP" FontFamily="Ebrima" />
 
             <TextBox  Grid.Column="2" Name="PasswordOfController" Height="20" Width="100" Margin="0,25,0,140" HorizontalAlignment="Center" Text="192.168.100.74" FontFamily="Ebrima" TextChanged="changingpassword_PasswordOfController" />
             <TextBox Grid.Column="0" Name="PasswordOfSender" Height="20" Width="100"   Margin="0,25,0,140" HorizontalAlignment="Center" Text="192.168.100.74" FontFamily="Ebrima" TextChanged="changingpassword_PasswordOfSender" />
 
-            <TextBlock  Focusable="False" FontFamily="Microsoft Sans Serif" Text="connect to remote" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Center" />
-            <TextBlock  Focusable="False" FontFamily="Microsoft Sans Serif" Text="being the remote" Grid.Column="2" VerticalAlignment="Top" HorizontalAlignment="Center" />
+            <TextBlock Foreground="White" Focusable="False" 
+                       VerticalAlignment="Top"
+                       HorizontalAlignment="Center"
+                       FontFamily="Microsoft Sans Serif" Text="connect to remote"
+                       Grid.Column="0"  Margin="10,100,0,0"/>
+            <TextBlock Foreground="White" Margin="0,100,0,0" Focusable="False" FontFamily="Microsoft Sans Serif" Text="being the remote" Grid.Column="2" VerticalAlignment="Top" HorizontalAlignment="Center" />
         </Grid>
     </Grid>
 </Window>

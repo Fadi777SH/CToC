@@ -252,7 +252,14 @@ namespace CToC
         {
 
             Point portionInFram = PortionOfCursorInPC2Fram();
-
+            if (e.LeftButton == MouseButtonState.Pressed)
+            {
+                MousePressEvent?.Invoke(MouseButton.Left, MouseButtonState.Pressed);
+            }
+            if (e.RightButton == MouseButtonState.Pressed)
+            {
+                MousePressEvent?.Invoke(MouseButton.Right, MouseButtonState.Pressed);
+            }
             MouseChange?.Invoke(portionInFram);
 
         }
@@ -301,6 +308,11 @@ namespace CToC
         private void PC2Fram_MouseWheel(object sender, MouseWheelEventArgs e)
         {
             MouseWheelevent?.Invoke(e.Delta);
+        }
+
+        private void PC2Fram_MouseMove_1(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+
         }
     }
 }

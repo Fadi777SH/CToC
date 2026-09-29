@@ -173,7 +173,7 @@ namespace CToC.Server
                     }
                     else if (MSG.type == MessageType.MouseWheelChange)
                     {
-                        inputsime.Mouse.HorizontalScroll(MSG.MouseWheelDelta);
+                        inputsime.Mouse.VerticalScroll(MSG.MouseWheelDelta);
                     }
                     else if (MSG.type == MessageType.point)
                     {
@@ -325,7 +325,7 @@ namespace CToC.Server
         #endregion
 
 
-        public void FrameMessage(ref byte[] StoreByte, byte[] bytes, int w, int h)
+        private void FrameMessage(ref byte[] StoreByte, byte[] bytes, int w, int h)
         {
             UDPMessage MSG = new();
             MSG.type = MessageType.Fram;
@@ -341,8 +341,8 @@ namespace CToC.Server
 
 
         #region FrameCaptureRegion
-        public static int frameWidth = 870;
-        public static int frameHeight = 500;
+        private static int frameWidth = 870;
+        private static int frameHeight = 500;
         static Stopwatch stopwatch = new();
         private async void UDPServer_SentFrameToPC1(Bitmap bitmap)
         {
@@ -367,7 +367,7 @@ namespace CToC.Server
 
             if (MessageByte.Length >= 64000)
             {
-                MessageBox.Show("you acceed the length limit of the message");
+              //  MessageBox.Show($"you acceed the length limit of the message \n the length was : {MessageByte.Length}");
             }
 
             if (ClientendPoint != null && ContinueSend)
@@ -377,7 +377,9 @@ namespace CToC.Server
 
                 Client?.SendToAsync(MessageByte, ClientendPoint);
             }
-            
+            stopwatch.Stop();
+            Debug.WriteLine(stopwatch.ElapsedMilliseconds);
+            stopwatch.Reset();
 
         }
         
@@ -448,11 +450,12 @@ namespace CToC.Server
             BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.JpegEncoderId, stream);
 
             encoder.SetSoftwareBitmap(softwareBitmap);
-            var width = 500;
-            var height = 500;
+            var width = 1920;
+            var height = 1080;
             encoder.BitmapTransform.ScaledWidth = (uint)width;
             encoder.BitmapTransform.ScaledHeight = (uint)height;
-            encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Fant;
+            encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.NearestNeighbor;
+            
             await encoder.FlushAsync();
             var com = ConversionClass.Compress(stream.AsStream().CopyToBytes());
             
