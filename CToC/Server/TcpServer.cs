@@ -63,7 +63,8 @@ namespace CToC.Server
             Accept = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
            // Accept.NoDelay = true;
             Accept.Bind(new IPEndPoint(IPAddressOfPC1, PORT));
-
+            ContinueSend = true;
+            ContinueRecive = true;
             PcEndPoint = new IPEndPoint(IPAddressOfPC1, PORT);
             ClientendPoint = new IPEndPoint(IPAddressOfPC2, PORT);
             new Thread(async delegate ()
@@ -133,13 +134,15 @@ namespace CToC.Server
 
             ClientendPoint = new IPEndPoint(IPAddressOfPC2, PORT);
             var Serverendpint = new IPEndPoint(IPAddressOfPC2, PORT);
-
+            ContinueSend = true;
+            ContinueRecive = true;
             frameCapture.Stream();
 
             new Thread(() =>
             {
                 SentFrameToPC2 += UDPServer_SentFrameToPC1;
                 SentFrameToPC2bytes += UdpServer_SentFrameToPC2bytes;
+                
             }).Start();
             
             while (ContinueRecive)
@@ -403,10 +406,6 @@ namespace CToC.Server
 
                 Client?.SendToAsync(MessageByte, ClientendPoint);
             }
-            stopwatch.Stop();
-
-            //Debug.WriteLine(stopwatch.ElapsedMilliseconds);
-            stopwatch.Reset();
         }
         private void UdpServer_SentFrameToPC2bytes(byte[] MessageByte)
         {
@@ -424,10 +423,7 @@ namespace CToC.Server
                 Client?.SendToAsync(MessageByte, ClientendPoint);
             }
             
-            stopwatch.Stop();
 
-            Debug.WriteLine("time to send byte :"+stopwatch.ElapsedMilliseconds + "  "+"the length of the message :"+MessageByte.Length);
-            stopwatch.Reset();
         }
         public async static void _direct3D11CaptureFramePool_FrameArrived(Direct3D11CaptureFramePool sender, object args)
         {
@@ -496,7 +492,7 @@ namespace CToC.Server
             BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.JpegEncoderId, stream);
 
             encoder.SetSoftwareBitmap(softwareBitmap);
-            var width = 700;
+            var width = 500;
             var height = 500;
             encoder.BitmapTransform.ScaledWidth = (uint)width;
             encoder.BitmapTransform.ScaledHeight = (uint)height;
