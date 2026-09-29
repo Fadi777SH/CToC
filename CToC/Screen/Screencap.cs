@@ -133,14 +133,23 @@ namespace CToC.Screen
             
         }
 
-        public static void ClassToByteArray(IDirect3DSurface str)
+        public static void ClassToByteArray(Direct3D11CaptureFrame str)
         {
             BinaryFormatter.BinaryConverter binaryConverter=new();
+            any a = new();
+            a.d = str;
             var w = binaryConverter.Serialize(str);
-            var f = binaryConverter.Deserialize<IDirect3DSurface>(w);
+            var f = binaryConverter.Deserialize<Direct3D11CaptureFrame>(w);
            // return b;
         }
+        class any 
+        {
+            public Direct3D11CaptureFrame d { get; set; }
+            public any()
+            {
 
+            }
+        }
 
     }
     public class FrameCapture : IDisposable
