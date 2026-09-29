@@ -22,12 +22,14 @@ using Windows.Graphics.Imaging;
 using Windows.Media.Capture;
 using Windows.Storage.Streams;
 using WindowsInput;
+using static System.Windows.Forms.AxHost;
 using BitmapEncoder = Windows.Graphics.Imaging.BitmapEncoder;
 using Point = System.Windows.Point;
 namespace CToC.Server
 {
     public class UdpServer
     {
+        #region headers
         public Socket? Accept;
         InputSimulator? inputsime;
         public Socket? Client;
@@ -54,7 +56,7 @@ namespace CToC.Server
         public delegate void SentFrameToPC2Handlerbit(byte[] bytes);
         public static event SentFrameToPC2Handlerbit? SentFrameToPC2bytes;
         public FrameCapture frameCapture=new();
-
+        #endregion
         private bool ContinueSend = true;
         private bool ContinueRecive = true;
         public async Task Sender(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
@@ -76,6 +78,7 @@ namespace CToC.Server
                         MainWindow.KeyPressEvent += PressThisKey;
                         MainWindow.MouseChange += MouseChangepos;
                         MainWindow.MousePressEvent += MousePressedDown;
+                        MainWindow.MouseWheelevent += MainWindow_MouseWheelevent;
                     }
                     
                 }
@@ -125,6 +128,8 @@ namespace CToC.Server
             }).Start();
         }
 
+
+
         public async Task Reciever(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
             inputsime = new();
@@ -165,6 +170,10 @@ namespace CToC.Server
                         var key = (WindowsInput.Native.VirtualKeyCode)vk;
                         inputsime.Keyboard.KeyDown(key);
                         inputsime.Keyboard.KeyUp(key);
+                    }
+                    else if (MSG.type == MessageType.MouseWheelChange)
+                    {
+                        inputsime.Mouse.HorizontalScroll(MSG.MouseWheelDelta);
                     }
                     else if (MSG.type == MessageType.point)
                     {
@@ -207,8 +216,8 @@ namespace CToC.Server
         }
 
 
-        
 
+        #region convertAndMessages
         private async Task<SoftwareBitmap> GetSoftwareBitmap(IDirect3DSurface Surface)
         {
             using var softwareBitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(Surface);
@@ -228,13 +237,15 @@ namespace CToC.Server
             Keyboard,
             MouseChange,
             point,
-            MouseWheel,
             Fram,
             Error,
+            MouseWheelChange
         }
         struct UDPMessage
         {
+            
             public MessageType type;
+            public int MouseWheelDelta;
             public Key key;
             public string ErrorMessage;
             public System.Windows.Input.MouseButton MouseSide;
@@ -244,8 +255,10 @@ namespace CToC.Server
             public byte[] FramByte;
             public MouseButtonState mousestate;
             public IDirect3DSurface surface;
+           
 
         };
+        
         static byte[] getBytesOfUDPMessage(UDPMessage str)
         {
             int size = Marshal.SizeOf(str);
@@ -309,21 +322,8 @@ namespace CToC.Server
             }
             return str;
         }
-        public async void PressThisKey(Key key)
-        {
+        #endregion
 
-            UDPMessage MSG = new();
-
-
-            MSG.type = MessageType.Keyboard;
-            MSG.key = key;
-            MSG.point = new System.Windows.Point(0, 0);
-            MSG.mousestate = MouseButtonState.Pressed;
-            MSG.MouseSide = System.Windows.Input.MouseButton.Left;
-            byte[] bytes = getBytesOfUDPMessage(MSG);
-            if (Accept != null && ServerShotDown == false)
-                await Accept.SendToAsync(bytes, ClientendPoint);
-        }
 
         public void FrameMessage(ref byte[] StoreByte, byte[] bytes, int w, int h)
         {
@@ -336,56 +336,11 @@ namespace CToC.Server
             var send = getBytesOfUDPMessage(MSG);
             send = StoreByte;
         }
-        public async void MouseChangepos(System.Windows.Point portion)
-        {
-
-            UDPMessage MSG = new();
 
 
-            MSG.type = MessageType.point;
-            MSG.key = Key.LWin;
-
-            MSG.point = portion;
-
-            MSG.MouseSide = System.Windows.Input.MouseButton.Left;
-            MSG.mousestate = MouseButtonState.Pressed;
-
-            byte[] bytes = getBytesOfUDPMessage(MSG);
-            if (Accept != null && ServerShotDown == false)
-            {
-                await Accept.SendToAsync(bytes, ClientendPoint);
-            }
-
-        }
-        public async void MousePressedDown(System.Windows.Input.MouseButton mouseside, MouseButtonState state)
-        {
-
-            UDPMessage MSG = new();
 
 
-            MSG.type = MessageType.MouseChange;
-            MSG.key = Key.LWin;
-            MSG.point = new(0, 0);
-            MSG.MouseSide = mouseside;
-            MSG.mousestate = state;
-            byte[] bytes = getBytesOfUDPMessage(MSG);
-
-
-            if (Accept != null && ServerShotDown == false)
-            {
-                await Accept.SendToAsync(bytes, ClientendPoint);
-
-
-            }
-        }
-        private Point GetPC2MousePos(Point portion)
-        {
-            var Xpoint = (portion.X / 100) * ScreenWidth ;
-            var Ypoint = (portion.Y / 100) * ScreenHeight ;
-            return new(Xpoint, Ypoint);
-        }
-
-
+        #region FrameCaptureRegion
         public static int frameWidth = 870;
         public static int frameHeight = 500;
         static Stopwatch stopwatch = new();
@@ -425,6 +380,7 @@ namespace CToC.Server
             
 
         }
+        
         public async static void _direct3D11CaptureFramePool_FrameArrived(Direct3D11CaptureFramePool sender, object args)
         {
 
@@ -505,6 +461,8 @@ namespace CToC.Server
 
 
         }
+        #endregion
+        #region ConnectionRagion
         public void Appclosed()
         {
             UDPMessage MSG = new();
@@ -513,6 +471,7 @@ namespace CToC.Server
             var B = getBytesOfUDPMessage(MSG);
             //Client?.SendToAsync(B, ClientendPoint);
         }
+        
         public void disconnectClient()
         {
             if (Client != null)
@@ -539,5 +498,82 @@ namespace CToC.Server
             MainWindow.MouseChange -= MouseChangepos;
             MainWindow.MousePressEvent -= MousePressedDown;
         }
+        #endregion
+        #region SendEventsRegion
+        private Point GetPC2MousePos(Point portion)
+        {
+            var Xpoint = (portion.X / 100) * ScreenWidth;
+            var Ypoint = (portion.Y / 100) * ScreenHeight;
+            return new(Xpoint, Ypoint);
+        }
+        public async void PressThisKey(Key key)
+        {
+
+            UDPMessage MSG = new();
+
+
+            MSG.type = MessageType.Keyboard;
+            MSG.key = key;
+            byte[] bytes = getBytesOfUDPMessage(MSG);
+            if (Accept != null && ServerShotDown == false)
+                await Accept.SendToAsync(bytes, ClientendPoint);
+        }
+        public async void MouseChangepos(System.Windows.Point portion)
+        {
+
+            UDPMessage MSG = new();
+
+
+            MSG.type = MessageType.point;
+
+
+            MSG.point = portion;
+
+            byte[] bytes = getBytesOfUDPMessage(MSG);
+            if (Accept != null && ServerShotDown == false)
+            {
+                await Accept.SendToAsync(bytes, ClientendPoint);
+            }
+
+        }
+        public async void MousePressedDown(System.Windows.Input.MouseButton mouseside, MouseButtonState state)
+        {
+
+            UDPMessage MSG = new();
+
+
+            MSG.type = MessageType.MouseChange;
+            MSG.MouseSide = mouseside;
+            MSG.mousestate = state;
+            byte[] bytes = getBytesOfUDPMessage(MSG);
+
+
+            if (Accept != null && ServerShotDown == false)
+            {
+                await Accept.SendToAsync(bytes, ClientendPoint);
+
+
+            }
+        }
+        private async void MainWindow_MouseWheelevent(int delta)
+        {
+            UDPMessage MSG = new();
+
+
+            MSG.type = MessageType.MouseWheelChange;
+            MSG.MouseWheelDelta = delta;
+
+            byte[] bytes = getBytesOfUDPMessage(MSG);
+
+
+            if (Accept != null && ServerShotDown == false)
+            {
+                await Accept.SendToAsync(bytes, ClientendPoint);
+
+
+            }
+        }
+        #endregion
     }
+
 }

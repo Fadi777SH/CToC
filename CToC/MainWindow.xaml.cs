@@ -42,6 +42,8 @@ namespace CToC
         public static event KeyPressHandler? KeyPressEvent;
         public delegate void MousePressHandler(System.Windows.Input.MouseButton mouseButton, MouseButtonState state);
         public static event MousePressHandler? MousePressEvent;
+        public delegate void MouseWheelHandler(int delta);
+        public static event MouseWheelHandler? MouseWheelevent;
         public static event Action? EndClientConnection;
         private int ScreenWidth = SystemInformation.VirtualScreen.Width;
         private int ScreenHeight = SystemInformation.VirtualScreen.Height;
@@ -294,6 +296,11 @@ namespace CToC
         {
             Server.Appclosed();
 
+        }
+
+        private void PC2Fram_MouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            MouseWheelevent?.Invoke(e.Delta);
         }
     }
 }
