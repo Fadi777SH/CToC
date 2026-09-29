@@ -72,26 +72,29 @@ namespace CToC
 
         private async void TcpServer_DisplayFrame(byte[] bytes)
         {
-
-            using MemoryStream stream = new MemoryStream(bytes);
-            
-            using Bitmap Bitmap= new(stream);
-
-            var ImageSource = ConvertToImageSource(Bitmap);
-            this.Dispatcher.Invoke(() => this.Frames.Source = ImageSource);
+            try
+            {
+                var decompressbyte = ConversionClass.Decompress(bytes);
+                var ImageSource = ConvertToImageSource(decompressbyte);
+                this.Dispatcher.Invoke(() => this.Frames.Source = ImageSource);
+            }
+            catch(Exception ex)
+            {
+                System.Windows.MessageBox.Show(ex.Message);
+            }
 
 
         }
 
-        public static BitmapImage ConvertToImageSource(System.Drawing.Image image)
+        public static BitmapImage ConvertToImageSource(byte[] bytes)
         {
-            using (var ms = new MemoryStream())
+            using (var ms = new MemoryStream(bytes))
             {
-              
-                image.Save(ms, ImageFormat.Png);
-                ms.Position = 0;
 
+                ms.Position = 0;
+               
                 var bitmapImage = new BitmapImage();
+                
                 bitmapImage.BeginInit();
                 bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
                 bitmapImage.StreamSource = ms;

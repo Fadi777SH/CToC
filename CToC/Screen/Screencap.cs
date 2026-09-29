@@ -16,6 +16,9 @@ using Windows.Storage.Compression;
 using Windows.System;
 using Windows.UI.Composition;
 using BinaryFormatter;
+using Microsoft.Graphics.Canvas;
+using Windows.Storage.Streams;
+using Windows.Devices.Bluetooth.Advertisement;
 namespace CToC.Screen
 {
 
@@ -125,6 +128,7 @@ namespace CToC.Screen
         public static Bitmap Resizebitmap(Bitmap orgin , int width,int height)
         {
             Bitmap bitmap = new(width, height);
+          
             using Graphics graphics = Graphics.FromImage(bitmap);
             
             graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.High;
@@ -133,23 +137,54 @@ namespace CToC.Screen
             
         }
 
-        public static void ClassToByteArray(Direct3D11CaptureFrame str)
+        public static async Task<byte[]> ClassToByteArray(InMemoryRandomAccessStream stream)
         {
-            BinaryFormatter.BinaryConverter binaryConverter=new();
-            any a = new();
-            a.d = str;
-            var w = binaryConverter.Serialize(str);
-            var f = binaryConverter.Deserialize<Direct3D11CaptureFrame>(w);
-           // return b;
+            stream.Seek(0);
+            var bytes = new byte[stream.Size];
+            using var reader = new DataReader(stream.GetInputStreamAt(0));
+            await reader.LoadAsync((uint)stream.Size);
+            reader.ReadBytes(bytes);
+            reader.DetachStream(); // keeps the original stream open
+            return bytes;
         }
-        class any 
+        public static async Task<InMemoryRandomAccessStream>  ByteArrayToClass(byte[] Bytes)
         {
-            public Direct3D11CaptureFrame d { get; set; }
-            public any()
+            var stream = new InMemoryRandomAccessStream();
+            using (var writer = new DataWriter(stream.GetOutputStreamAt(0)))
+            {
+                writer.WriteBytes(Bytes);
+                await writer.StoreAsync();
+                await writer.FlushAsync();
+                writer.DetachStream();
+            }
+            stream.Seek(0);
+            return stream;
+        }
+        public static byte[] Compress(byte[] data)
+        {
+            using var output = new MemoryStream();
+            using (var gzip = new GZipStream(output, CompressionLevel.Optimal))
+                gzip.Write(data, 0, data.Length);
+            return output.ToArray();   // after gzip is disposed/flushed
+        }
+
+        public static byte[] Decompress(byte[] data)
+        {
+            using var input = new MemoryStream(data);
+            using var gzip = new GZipStream(input, CompressionMode.Decompress);
+            using var output = new MemoryStream();
+            gzip.CopyTo(output);
+            return output.ToArray();
+        }
+        class any
+        {
+            public SoftwareBitmap s { get; set; }
+           public any()
             {
 
             }
         }
+        
 
     }
     public class FrameCapture : IDisposable
@@ -170,10 +205,10 @@ namespace CToC.Screen
         {
             get
             {
-               return CurrentState;
+               return StreamCurrentState;
             }
         }
-        private bool CurrentState = false;
+        private bool StreamCurrentState = false;
         public void Dispose()
         {
             if (_direct3D11CaptureFramePool != null)
@@ -185,60 +220,46 @@ namespace CToC.Screen
             
         }
 
-        private  Task<Windows.UI.Composition.ContainerVisual> GetVisual()
-        {
-            var dispatcherQueueHandler = DispatcherQueueController.CreateOnDedicatedThread();
-
-            Windows.UI.Composition.ContainerVisual VS;
-            var tcs = new TaskCompletionSource<ContainerVisual>(
-                     TaskCreationOptions.RunContinuationsAsynchronously);
-
-            dispatcherQueueHandler.DispatcherQueue.TryEnqueue(() =>
-            {
-                //ToDO -> you should get the optimal visual of the windows 
-                var Com = new Windows.UI.Composition.Compositor();
-
-                VS = Com.CreateContainerVisual();
-                tcs.SetResult(VS);
-
-
-
-            });
-
-
-            return tcs.Task;
-        }
         public static IDirect3DDevice GetDirectdevice()
         {
             using (var sharpDxDevice = new SharpDX.Direct3D11.Device(SharpDX.Direct3D.DriverType.Hardware,
                                                      SharpDX.Direct3D11.DeviceCreationFlags.BgraSupport))
             {
-                var D = CaptureInterop.CreateDirect3DDeviceFromSharpDXDevice2(sharpDxDevice);
+                var D = CaptureInterop.CreateDirect3DDeviceFromSharpDXDevice(sharpDxDevice);
                 return D;
             }
         }
         Windows.UI.WindowId windowId = new();
         DisplayId displayId = new();
-        private DispatcherQueueController dispatcherQueueController;
+
 
         //private static Lazy<IDirect3DDevice> device = new(() => GetDirectdevice());
         public  IDirect3DDevice dev;
         private DirectXPixelFormat Format = DirectXPixelFormat.B8G8R8A8UIntNormalized;
 
+
         public  void Stream()
         {
-            if (CurrentState == false)
+            if (StreamCurrentState == false)
             {
-                _captureItem = GraphicsCaptureItem.TryCreateFromDisplayId(displayId);
-                dev = GetDirectdevice();
+                try
+                {
+                    _captureItem = GraphicsCaptureItem.TryCreateFromDisplayId(displayId);
+                    
+                    dev = GetDirectdevice();
 
-                _direct3D11CaptureFramePool = Direct3D11CaptureFramePool.CreateFreeThreaded(dev, Format, 1, new(ScreenWidth, ScreenHeight));
+                    _direct3D11CaptureFramePool = Direct3D11CaptureFramePool.CreateFreeThreaded(dev, Format, 1, new(ScreenWidth, ScreenHeight));
 
-                _direct3D11CaptureFramePool.FrameArrived += UdpServer._direct3D11CaptureFramePool_FrameArrived;
-                _graphicsCaptureSession = _direct3D11CaptureFramePool.CreateCaptureSession(_captureItem);
-                _graphicsCaptureSession.StartCapture();
+                    _direct3D11CaptureFramePool.FrameArrived += UdpServer._direct3D11CaptureFramePool_FrameArrived;
+                    _graphicsCaptureSession = _direct3D11CaptureFramePool.CreateCaptureSession(_captureItem);
+                    _graphicsCaptureSession.StartCapture();
+                }
+                catch(Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
             }
-            CurrentState = true;
+            StreamCurrentState = true;
 
 
         }
@@ -247,7 +268,7 @@ namespace CToC.Screen
         {
             _direct3D11CaptureFramePool.FrameArrived -= UdpServer._direct3D11CaptureFramePool_FrameArrived;
             Dispose();
-            CurrentState = false;
+            StreamCurrentState = false;
         }
     }
 }

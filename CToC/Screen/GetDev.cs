@@ -22,23 +22,7 @@ namespace CToC.Screen
                 CallingConvention = CallingConvention.StdCall
                 )]
         public static extern UInt32 CreateDirect3D11DeviceFromDXGIDevice(IntPtr dxgiDevice, out IntPtr graphicsDevice);
-         public static IDirect3DDevice CreateDirect3DDeviceFromSharpDXDevice(SharpDX.Direct3D11.Device sharpDxDevice)
-        {
-            IDirect3DDevice device = null;
-            using (var dxgiDevice = sharpDxDevice.QueryInterface<SharpDX.DXGI.Device3>())
-            {
-                uint hr = CreateDirect3D11DeviceFromDXGIDevice(dxgiDevice.NativePointer, out IntPtr pUnknown);
-                if (hr == 0)
-                {
-
-
-                    device = Marshal.GetObjectForIUnknown(pUnknown) as IDirect3DDevice;
-                    Marshal.Release(pUnknown);
-                }
-            }
-            return device;
-        }
-        public static IDirect3DDevice CreateDirect3DDeviceFromSharpDXDevice2(SharpDX.Direct3D11.Device sharpDxDevice)
+        public static IDirect3DDevice CreateDirect3DDeviceFromSharpDXDevice(SharpDX.Direct3D11.Device sharpDxDevice)
         {
             if (CreateDirect3D11DeviceFromDXGIDevice(sharpDxDevice.NativePointer, out var punk) != 0)
                 return null;

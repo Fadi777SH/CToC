@@ -1,5 +1,7 @@
 ﻿using CToC.Mouse;
 using CToC.Screen;
+using ImageResizer.ExtensionMethods;
+using Microsoft.Graphics.Canvas;
 using SharpDX.DXGI;
 using System.Diagnostics;
 using System.Drawing.Imaging;
@@ -20,9 +22,8 @@ using Windows.Graphics.Imaging;
 using Windows.Media.Capture;
 using Windows.Storage.Streams;
 using WindowsInput;
-using Point = System.Windows.Point;
 using BitmapEncoder = Windows.Graphics.Imaging.BitmapEncoder;
-using ImageResizer.ExtensionMethods;
+using Point = System.Windows.Point;
 namespace CToC.Server
 {
     public class UdpServer
@@ -390,7 +391,7 @@ namespace CToC.Server
 
 
             byte[] MessageByte = MessageByteArrayFromBitmap(bitmap);
-            if (MessageByte.Length >= 640000)
+            if (MessageByte.Length >= 64000)
             {
                 MessageBox.Show("you acceed the length limit of the message");
             }
@@ -404,13 +405,13 @@ namespace CToC.Server
             }
             stopwatch.Stop();
 
-            Debug.WriteLine(stopwatch.ElapsedMilliseconds);
+            //Debug.WriteLine(stopwatch.ElapsedMilliseconds);
             stopwatch.Reset();
         }
         private void UdpServer_SentFrameToPC2bytes(byte[] MessageByte)
         {
 
-            if (MessageByte.Length >= 6400000)
+            if (MessageByte.Length >= 64000)
             {
                 MessageBox.Show("you acceed the length limit of the message");
             }
@@ -422,30 +423,30 @@ namespace CToC.Server
 
                 Client?.SendToAsync(MessageByte, ClientendPoint);
             }
+            
             stopwatch.Stop();
 
-            Debug.WriteLine(stopwatch.ElapsedMilliseconds);
+            Debug.WriteLine("time to send byte :"+stopwatch.ElapsedMilliseconds + "  "+"the length of the message :"+MessageByte.Length);
             stopwatch.Reset();
         }
         public async static void _direct3D11CaptureFramePool_FrameArrived(Direct3D11CaptureFramePool sender, object args)
         {
 
-
+            stopwatch.Start();
             using var Frame = sender.TryGetNextFrame();
 
             if (Frame != null)
             {
-
+                
                 using var softwareBitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(Frame.Surface);
-               
-               
-                using var bitmap = await FromSoftwarebitmapTobitmap(softwareBitmap);
+
                 var bytes = await FromSoftwarebitmapToBytes(softwareBitmap);
+
                 SentFrameToPC2bytes?.Invoke(bytes);
                // SentFrameToPC2?.Invoke(bitmap);
 
             }
-            stopwatch.Start();
+            
 
 
         }
@@ -494,18 +495,17 @@ namespace CToC.Server
 
             BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.JpegEncoderId, stream);
 
-
             encoder.SetSoftwareBitmap(softwareBitmap);
-
-
+            var width = 700;
+            var height = 500;
+            encoder.BitmapTransform.ScaledWidth = (uint)width;
+            encoder.BitmapTransform.ScaledHeight = (uint)height;
+            encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Fant;
             await encoder.FlushAsync();
+            var com = ConversionClass.Compress(stream.AsStream().CopyToBytes());
+            
 
-
-            var buffer = stream.AsStream().CopyToBytes();
-
-            //try  to send byte of the bitmap
-
-            return buffer;
+            return com;
 
 
         }
@@ -515,7 +515,7 @@ namespace CToC.Server
             MSG.ErrorMessage = "Disconnect from the remote computer";
             MSG.type = MessageType.Error;
             var B = getBytesOfUDPMessage(MSG);
-            Client?.SendToAsync(B, ClientendPoint);
+            //Client?.SendToAsync(B, ClientendPoint);
         }
         public void disconnectClient()
         {

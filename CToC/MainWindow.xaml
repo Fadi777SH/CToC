@@ -48,12 +48,12 @@
 
             <Border Grid.Column="0" Background="Beige" VerticalAlignment="Stretch" />
             <Border Grid.Column="2" Background="Beige" VerticalAlignment="Stretch" />
-            <Border Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"  Name="PC2Fram" 
+            <Border Grid.Column="1" Width="800" Height="500" Margin="0,0,0,0"  Name="PC2Fram" 
                     MouseMove="PC2Fram_MouseMove"
                     MouseLeftButtonDown="PC2Fram_MouseLeftButtonDown"
                     MouseRightButtonDown="PC2Fram_MouseRightButtonDown"
-                    Background="CadetBlue" >
-                <Image Name="Frames"  Source="{Binding}" Margin="0,0,9,19" />
+                    Background="CadetBlue"  >
+                <Image Name="Frames"  Source="{Binding}" Margin="0,0,0,17" />
             </Border>
 
             <ToggleButton Grid.Column="2" Name="PC2ToPC1" Style="{StaticResource ToggelBtnStyle}" Click="PC2ToPC1Checked"/>
