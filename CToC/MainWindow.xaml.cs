@@ -52,20 +52,19 @@ namespace CToC
         TakeScreenSnippit screenDisplay;
         private IntPtr Handle;
 
-     
+        UDPServerAsync uDPServerAsync;
         public static event Action? EndServerConnection;
         public MainWindow()
         {
 
             InitializeComponent();
             DataContext = this;
-
+            
 
             this.ThisPCIPAddress = GetIPAddress().ToString();
 
 
             Handle = new WindowInteropHelper(this).Handle;
-
 
 
             UdpServer.FrameArrived += TcpServer_DisplayFrame;
@@ -147,16 +146,21 @@ namespace CToC
         private void PC2ToPC1Checked(object sender, RoutedEventArgs e)
         {
             var btn = sender as ToggleButton;
+
             try
             {
                 IPAddress ipofpc1 = IPAddress.Parse(_IPAddress);
                 IPAddress ipofpc2 = IPAddress.Parse(this.PasswordOfController.Text);
-               
+
+                uDPServerAsync = new(new IPEndPoint(ipofpc1, 22), new IPEndPoint(ipofpc2, 22));
+
                 if (btn != null && btn.IsChecked == true)
                 {
                     if (PC1ToPC2.IsChecked == false && (ipofpc1.ToString() != ipofpc2.ToString()))
                     {
-                        Server?.Reciever(ipofpc1, ipofpc2);
+                      //  Server?.Reciever(ipofpc1, ipofpc2);
+                      uDPServerAsync?.StartRemoteServer(new IPEndPoint(ipofpc1, 22), new IPEndPoint(ipofpc2, 22));
+                      
                     }
                     else
                     {
@@ -196,12 +200,13 @@ namespace CToC
             {
                 IPAddress ipofpc1 = IPAddress.Parse(_IPAddress);
                 IPAddress ipofpc2 = IPAddress.Parse(this.PasswordOfSender.Text);
-
+                uDPServerAsync = new(new IPEndPoint(ipofpc1, 22), new IPEndPoint(ipofpc2, 22));
                 if (btn?.IsChecked == true)
                 {
                     if (PC2ToPC1?.IsChecked == false&&(ipofpc1.ToString() != ipofpc2.ToString()))
                     {
-                        Server?.Sender(ipofpc1, ipofpc2);
+                       // Server?.Sender(ipofpc1, ipofpc2);
+                        uDPServerAsync?.StartUserServer(new IPEndPoint(ipofpc1, 22), new IPEndPoint(ipofpc2, 22));
                     }
                     else
                     {

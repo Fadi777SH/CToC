@@ -23,7 +23,7 @@ using Windows.Media.Capture;
 using Windows.Storage.Streams;
 using WindowsInput;
 using static System.Windows.Forms.AxHost;
-using BitmapEncoder = Windows.Graphics.Imaging.BitmapEncoder;
+using BitmapEncoder =Windows.Graphics.Imaging.BitmapEncoder;
 using Point = System.Windows.Point;
 namespace CToC.Server
 {
@@ -59,6 +59,8 @@ namespace CToC.Server
         #endregion
         private bool ContinueSend = true;
         private bool ContinueRecive = true;
+        public event EventHandler<SocketAsyncEventArgs>? Completed;
+
         public async Task Sender(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
             if (Accept?.Connected == true) return;
@@ -69,6 +71,12 @@ namespace CToC.Server
             ContinueRecive = true;
             PcEndPoint = new IPEndPoint(IPAddressOfPC1, PORT);
             ClientendPoint = new IPEndPoint(IPAddressOfPC2, PORT);
+
+ 
+            //new
+            await Accept.ConnectAsync(ClientendPoint);
+            
+            
             new Thread(async delegate ()
             {
                 try
@@ -128,7 +136,10 @@ namespace CToC.Server
             }).Start();
         }
 
-
+        private void UdpServer_Completed(object? sender, SocketAsyncEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
 
         public async Task Reciever(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
@@ -138,9 +149,18 @@ namespace CToC.Server
             Client.Bind(new IPEndPoint(IPAddressOfPC1, PORT));
 
             ClientendPoint = new IPEndPoint(IPAddressOfPC2, PORT);
-            var Serverendpint = new IPEndPoint(IPAddressOfPC2, PORT);
+
+
+
+            //new
+           await Client.ConnectAsync(ClientendPoint);
+
+
+
+
             ContinueSend = true;
             ContinueRecive = true;
+
             frameCapture.Stream();
 
             new Thread(() =>
@@ -160,7 +180,7 @@ namespace CToC.Server
                 {
                     
 
-                    var size =await Client.ReceiveFromAsync(RecievedByte, Serverendpint);
+                    var size =await Client.ReceiveFromAsync(RecievedByte, ClientendPoint);
                     Array.Resize(ref RecievedByte, size.ReceivedBytes);
 
                     UDPMessage MSG = FromByteArrayToUDPMessage(RecievedByte);
@@ -362,12 +382,12 @@ namespace CToC.Server
                 Client?.SendToAsync(MessageByte, ClientendPoint);
             }
         }
-        private void UdpServer_SentFrameToPC2bytes(byte[] MessageByte)
+        private async void UdpServer_SentFrameToPC2bytes(byte[] MessageByte)
         {
 
             if (MessageByte.Length >= 64000)
             {
-              //  MessageBox.Show($"you acceed the length limit of the message \n the length was : {MessageByte.Length}");
+               // MessageBox.Show($"you acceed the length limit of the message \n the length was : {MessageByte.Length}");
             }
 
             if (ClientendPoint != null && ContinueSend)
@@ -375,7 +395,10 @@ namespace CToC.Server
                 // UDPMessage MSG = new UDPMessage { type = MessageType.Fram, FramByte = stream.ToArray() };
 
 
-                Client?.SendToAsync(MessageByte, ClientendPoint);
+               Client?.SendToAsync(MessageByte, ClientendPoint);
+              
+                // to do , make the socket send a collection of data to help avoid legnth limit 
+               // Client?.SendPacketsAsync();
             }
             stopwatch.Stop();
             Debug.WriteLine(stopwatch.ElapsedMilliseconds);
@@ -441,6 +464,8 @@ namespace CToC.Server
             
             
         }
+
+
         private static async Task<byte[]> FromSoftwarebitmapToBytes(SoftwareBitmap softwareBitmap)
         {
 
@@ -449,18 +474,17 @@ namespace CToC.Server
 
             BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.JpegEncoderId, stream);
 
-            encoder.SetSoftwareBitmap(softwareBitmap);
-            var width = 1920;
-            var height = 1080;
-            encoder.BitmapTransform.ScaledWidth = (uint)width;
-            encoder.BitmapTransform.ScaledHeight = (uint)height;
-            encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.NearestNeighbor;
             
+            encoder.BitmapTransform.ScaledWidth = (uint)700;
+            encoder.BitmapTransform.ScaledHeight = (uint)500;
+            encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.NearestNeighbor;
+            encoder.SetSoftwareBitmap(softwareBitmap);
             await encoder.FlushAsync();
-            var com = ConversionClass.Compress(stream.AsStream().CopyToBytes());
+
+            var CompressedBytes = ConversionClass.Compress(stream.AsStream().CopyToBytes());
             
 
-            return com;
+            return CompressedBytes;
 
 
         }
@@ -536,6 +560,7 @@ namespace CToC.Server
             if (Accept != null && ServerShotDown == false)
             {
                 await Accept.SendToAsync(bytes, ClientendPoint);
+                
             }
 
         }
