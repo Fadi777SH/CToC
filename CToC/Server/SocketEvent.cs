@@ -1,6 +1,7 @@
 ﻿using CToC.Screen;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Net;
@@ -23,6 +24,7 @@ namespace CToC.Server
         private EndPoint? RemoreEndpoint;
         private SocketAsyncEventArgs _socketAsyncEventArgs;
         private SocketAsyncEventArgs UserSocketEventArg;
+        
         public UDPServerAsync(EndPoint userendpoint, EndPoint remoteendpoint)
         {
             UserEndPoint = userendpoint;
@@ -49,16 +51,11 @@ namespace CToC.Server
 
                 UserSocket.Bind(UserEndPoint == null ? UserEndPoint : userendpoint);
 
-                UserSocketEventArg = new SocketAsyncEventArgs();
+                UserSocketEventArg = new() { RemoteEndPoint=remoteendpoint};
 
-                UserSocketEventArg.RemoteEndPoint = remoteendpoint;
+                UserSocketEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(SentToRemote);
+                StartSend(UserSocketEventArg);
 
-                MainWindow.KeyPressEvent += PressThisKey;
-                // MainWindow.MouseChange += MouseChangepos;
-                //MainWindow.MousePressEvent += MousePressedDown;
-                //MainWindow.MouseWheelevent += MainWindow_MouseWheelevent;
-
-                UserSocketEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(SendFromUserAsync);
             }
             catch(SocketException ex)
             {
@@ -67,6 +64,29 @@ namespace CToC.Server
 
 
         }
+        public async void SentToRemote(object sender, SocketAsyncEventArgs e)
+        {
+
+        }
+        public async void RecieveFromRemote(object sender, SocketAsyncEventArgs e)
+        {
+
+        }
+        public async void StartSend(SocketAsyncEventArgs e)
+        {
+            MainWindow.KeyPressEvent += PressThisKey;
+        }
+        public async void StartRecive(SocketAsyncEventArgs e)
+        {
+            while (true)
+            {
+             var f=   RemoteSocket?.ReceiveFromAsync(e);
+                if (f == true)
+                {
+
+                }
+            }
+        }
         public async Task StartRemoteServer(EndPoint userendpoint, EndPoint remoteendpoint)
         {
 
@@ -74,19 +94,24 @@ namespace CToC.Server
 
             RemoteSocket.Bind(userendpoint);
 
-            UserSocketEventArg = new SocketAsyncEventArgs();
 
-            UserSocketEventArg.RemoteEndPoint = remoteendpoint;
-            UserSocketEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(SendFromUserAsync);
-            
-            while (true)
-            {
-                RemoteSocket.ReceiveFromAsync(UserSocketEventArg);
-            }
-           
+
+
+            UserSocketEventArg = new SocketAsyncEventArgs() { RemoteEndPoint=remoteendpoint};
+
+            UserSocketEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(RecieveFromRemote);
+            StartRecive(UserSocketEventArg);
+
+            //UserSocketEventArg.RemoteEndPoint = remoteendpoint;
+
+            //UserSocketEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(UserSocketEventArg_Completed);
+
+
 
 
         }
+
+
         private void SendFromUserAsync(object? sender, SocketAsyncEventArgs e)
         {
 
@@ -102,9 +127,13 @@ namespace CToC.Server
             byte[] bytes = getBytesOfUDPMessage(MSG);
 
 
-           UserSocketEventArg.SetBuffer(bytes,UserSocketEventArg.Offset,UserSocketEventArg.Count);
+            UserSocketEventArg.SetBuffer(bytes,UserSocketEventArg.Offset,UserSocketEventArg.Count);
+            Debug.WriteLine(UserSocketEventArg.Buffer.Length + "  " + UserSocketEventArg.Offset);
+            var f= UserSocket?.SendToAsync(UserSocketEventArg);
+            if (f == true)
+            {
 
-           UserSocket?.SendToAsync(UserSocketEventArg);
+            }
 
         }
         public async void MouseChangepos(System.Windows.Point portion)
