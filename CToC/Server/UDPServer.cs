@@ -397,13 +397,13 @@ namespace CToC.Server
         public async void PressThisKey(Key key,bool e)
         {
 
+            //skip pressing the Lwin and Rwin button
+            if (Key.LWin == key||key==Key.RWin) return;
             MSG = new();
-
-
             MSG.type = MessageType.Keyboard;
             MSG.key = key;
             MSG.IsKeyDown = e;
-
+            
             byte[] bytes = getBytesOfUDPMessage(MSG);
             if (Accept != null && ServerShotDown == false)
                 await Accept.SendToAsync(bytes, ClientendPoint);
