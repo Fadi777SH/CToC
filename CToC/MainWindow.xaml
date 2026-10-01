@@ -9,7 +9,7 @@
         PreviewKeyDown="PC2Fram_PreviewKeyDown"
         Closed="Window_Closed"
         ResizeMode="CanMinimize"
-        
+        Focusable="False"
         MouseLeftButtonDown="Window_MouseLeftButtonDown"
         Width="1000" Height="600" Background="#FF201D1D">
     <Window.Resources>
@@ -54,9 +54,9 @@
                     MouseMove="PC2Fram_MouseMove"
                     MouseDown="PC2Fram_MouseDown"
                     MouseUp="PC2Fram_MouseUp"
-                   
+ 
                     MouseWheel="PC2Fram_MouseWheel"
-                    Focusable="True"
+                    Focusable="False"
                     Background="#FF6A1F1F"  >
                 <Image Name="Frames"  />
             </Border>

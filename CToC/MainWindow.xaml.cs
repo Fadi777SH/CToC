@@ -257,14 +257,6 @@ namespace CToC
         {
 
             Point portionInFram = PortionOfCursorInPC2Fram();
-            if (e.LeftButton == MouseButtonState.Pressed)
-            {
-                MousePressEvent?.Invoke(MouseButton.Left, MouseButtonState.Pressed);
-            }
-            if (e.RightButton == MouseButtonState.Pressed)
-            {
-                MousePressEvent?.Invoke(MouseButton.Right, MouseButtonState.Pressed);
-            }
             MouseChange?.Invoke(portionInFram);
 
         }
@@ -307,11 +299,13 @@ namespace CToC
         private void PC2Fram_MouseUp(object sender, MouseButtonEventArgs e)
         {
             MousePressEvent?.Invoke(e.ChangedButton, e.ButtonState);
+            Debug.WriteLine("up");
         }
 
         private void PC2Fram_MouseDown(object sender, MouseButtonEventArgs e)
         {
             MousePressEvent?.Invoke(e.ChangedButton, e.ButtonState);
+            Debug.WriteLine("down");
         }
 
         private void IPofRemote_TextChanged(object sender, TextChangedEventArgs e)

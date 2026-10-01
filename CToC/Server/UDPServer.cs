@@ -203,6 +203,7 @@ namespace CToC.Server
                                 
                             }
                         }
+
                         else if (MSG.mousestate == MouseButtonState.Released)
                         {
                             if (MSG.MouseSide == System.Windows.Input.MouseButton.Left)
