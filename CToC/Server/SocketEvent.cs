@@ -38,10 +38,6 @@ namespace CToC.Server
            // _socketAsyncEventArgs = new();
            // _socketAsyncEventArgs.Completed += new EventHandler<SocketAsyncEventArgs>(IO_compelete);
         }
-        private void IO_compelete(object? sender, SocketAsyncEventArgs e)
-        {
-
-        }
         public async Task StartUserServer()
         {
             try
@@ -152,7 +148,7 @@ namespace CToC.Server
 
             UserSocketEventArg = new SocketAsyncEventArgs() { RemoteEndPoint=RemoreEndpoint};
 
-            UserSocketEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(RecieveFromRemote);
+            UserSocketEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(IO_Completed);
             StartRecive(UserSocketEventArg);
 
             //UserSocketEventArg.RemoteEndPoint = remoteendpoint;
@@ -183,6 +179,8 @@ namespace CToC.Server
             UserSocketEventArg.SetBuffer(bytes,UserSocketEventArg.Offset,bytes.Length);
 
             var f= UserSocket?.SendToAsync(UserSocketEventArg);
+            TransmitFileOptions e = new() { };
+            
             if (f == true)
             {
 

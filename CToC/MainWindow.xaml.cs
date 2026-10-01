@@ -158,8 +158,8 @@ namespace CToC
                 {
                     if (PC1ToPC2.IsChecked == false && (ipofpc1.ToString() != ipofpc2.ToString()))
                     {
-                      //  Server?.Reciever(ipofpc1, ipofpc2);
-                      uDPServerAsync?.StartRemoteServer();
+                       Server?.Reciever(ipofpc1, ipofpc2);
+                      //uDPServerAsync?.StartRemoteServer();
                       
                     }
                     else
@@ -200,13 +200,13 @@ namespace CToC
             {
                 IPAddress ipofpc1 = IPAddress.Parse(_IPAddress);
                 IPAddress ipofpc2 = IPAddress.Parse(this.PasswordOfSender.Text);
-                uDPServerAsync = new(new IPEndPoint(ipofpc1, 22), new IPEndPoint(ipofpc2, 22));
+                
                 if (btn?.IsChecked == true)
                 {
                     if (PC2ToPC1?.IsChecked == false&&(ipofpc1.ToString() != ipofpc2.ToString()))
                     {
-                       // Server?.Sender(ipofpc1, ipofpc2);
-                        uDPServerAsync?.StartUserServer();
+                        Server?.Sender(ipofpc1, ipofpc2);
+
                     }
                     else
                     {
