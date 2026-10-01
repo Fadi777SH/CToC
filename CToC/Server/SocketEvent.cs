@@ -35,25 +35,25 @@ namespace CToC.Server
 
         private void Initilize()
         {
-            _socketAsyncEventArgs = new();
-            _socketAsyncEventArgs.Completed += new EventHandler<SocketAsyncEventArgs>(IO_compelete);
+           // _socketAsyncEventArgs = new();
+           // _socketAsyncEventArgs.Completed += new EventHandler<SocketAsyncEventArgs>(IO_compelete);
         }
         private void IO_compelete(object? sender, SocketAsyncEventArgs e)
         {
 
         }
-        public async Task StartUserServer(EndPoint userendpoint, EndPoint remoteendpoint)
+        public async Task StartUserServer()
         {
             try
             {
 
                 UserSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
-                UserSocket.Bind(UserEndPoint == null ? UserEndPoint : userendpoint);
+                UserSocket.Bind(UserEndPoint);
 
-                UserSocketEventArg = new() { RemoteEndPoint=remoteendpoint};
+                UserSocketEventArg = new() { RemoteEndPoint=RemoreEndpoint};
 
-                UserSocketEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(SentToRemote);
+                UserSocketEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(IO_Completed);
                 StartSend(UserSocketEventArg);
 
             }
@@ -64,12 +64,70 @@ namespace CToC.Server
 
 
         }
+        void IO_Completed(object sender, SocketAsyncEventArgs e)
+        {
+            
+            switch (e.LastOperation)
+            {
+                case SocketAsyncOperation.Receive:
+                    ProcessReceive(e);
+                    break;
+                case SocketAsyncOperation.Send:
+                    ProcessSend(e);
+                    break;
+                default:
+                    throw new ArgumentException("The last operation completed on the socket was not a receive or send");
+            }
+        }
+        private void ProcessReceive(SocketAsyncEventArgs e)
+        {
+            // check if the remote host closed the connection
+            if (e.BytesTransferred > 0 && e.SocketError == SocketError.Success)
+            {
+
+
+                //echo the data received back to the client
+                e.SetBuffer(e.Offset, e.BytesTransferred);
+                Socket socket = (Socket)e.UserToken;
+                bool willRaiseEvent = socket.SendAsync(e);
+                if (!willRaiseEvent)
+                {
+                    ProcessSend(e);
+                }
+            }
+        }
+        private void ProcessSend(SocketAsyncEventArgs e)
+        {
+            if (e.SocketError == SocketError.Success)
+            {
+                
+                Socket socket = (Socket)e.UserToken;
+
+                bool willRaiseEvent = socket.ReceiveAsync(e);
+                if (!willRaiseEvent)
+                {
+                    ProcessReceive(e);
+                }
+            }
+            else
+            {
+                //CloseClientSocket(e);
+            }
+        }
         public async void SentToRemote(object sender, SocketAsyncEventArgs e)
         {
+            if (e!=null)
+            {
 
+            }
         }
         public async void RecieveFromRemote(object sender, SocketAsyncEventArgs e)
         {
+            var buffer = e.Buffer;
+
+            Debug.WriteLine(e.Buffer.Length);
+
+            StartRecive(e);
 
         }
         public async void StartSend(SocketAsyncEventArgs e)
@@ -78,26 +136,21 @@ namespace CToC.Server
         }
         public async void StartRecive(SocketAsyncEventArgs e)
         {
-            while (true)
-            {
-             var f=   RemoteSocket?.ReceiveFromAsync(e);
-                if (f == true)
-                {
+ 
+                var f = RemoteSocket?.ReceiveFromAsync(e);
+                if (f!=true) return;
 
-                }
-            }
+            
         }
-        public async Task StartRemoteServer(EndPoint userendpoint, EndPoint remoteendpoint)
+        public async Task StartRemoteServer()
         {
 
             RemoteSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
-            RemoteSocket.Bind(userendpoint);
+            RemoteSocket.Bind(UserEndPoint);
 
 
-
-
-            UserSocketEventArg = new SocketAsyncEventArgs() { RemoteEndPoint=remoteendpoint};
+            UserSocketEventArg = new SocketAsyncEventArgs() { RemoteEndPoint=RemoreEndpoint};
 
             UserSocketEventArg.Completed += new EventHandler<SocketAsyncEventArgs>(RecieveFromRemote);
             StartRecive(UserSocketEventArg);
@@ -127,8 +180,8 @@ namespace CToC.Server
             byte[] bytes = getBytesOfUDPMessage(MSG);
 
 
-            UserSocketEventArg.SetBuffer(bytes,UserSocketEventArg.Offset,UserSocketEventArg.Count);
-            Debug.WriteLine(UserSocketEventArg.Buffer.Length + "  " + UserSocketEventArg.Offset);
+            UserSocketEventArg.SetBuffer(bytes,UserSocketEventArg.Offset,bytes.Length);
+
             var f= UserSocket?.SendToAsync(UserSocketEventArg);
             if (f == true)
             {

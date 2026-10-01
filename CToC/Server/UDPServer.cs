@@ -87,6 +87,7 @@ namespace CToC.Server
                         MainWindow.MouseChange += MouseChangepos;
                         MainWindow.MousePressEvent += MousePressedDown;
                         MainWindow.MouseWheelevent += MainWindow_MouseWheelevent;
+                      
                     }
                     
                 }
