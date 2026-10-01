@@ -24,6 +24,7 @@ namespace CToC
         public MessageType type;
         public int MouseWheelDelta;
         public Key key;
+        public bool IsKeyDown;
         public string ErrorMessage;
         public System.Windows.Input.MouseButton MouseSide;
         public System.Windows.Point Mousepoint;

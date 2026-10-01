@@ -169,7 +169,9 @@ namespace CToC.Server
                     {
                         int vk = KeyInterop.VirtualKeyFromKey(MSG.key);
                         var key = (WindowsInput.Native.VirtualKeyCode)vk;
+                        if(MSG.IsKeyDown)
                         inputsime.Keyboard.KeyDown(key);
+                        else
                         inputsime.Keyboard.KeyUp(key);
                     }
 
@@ -212,7 +214,7 @@ namespace CToC.Server
                             }
                             if (MSG.MouseSide == System.Windows.Input.MouseButton.Right)
                             {
-                                inputsime.Mouse.LeftButtonUp();
+                                inputsime.Mouse.RightButtonUp();
                             }
                             if (MSG.MouseSide == System.Windows.Input.MouseButton.Middle)
                             {
@@ -392,7 +394,7 @@ namespace CToC.Server
             var Ypoint = (portion.Y / 100) * ScreenHeight;
             return new(Xpoint, Ypoint);
         }
-        public async void PressThisKey(Key key)
+        public async void PressThisKey(Key key,bool e)
         {
 
             MSG = new();
@@ -400,6 +402,8 @@ namespace CToC.Server
 
             MSG.type = MessageType.Keyboard;
             MSG.key = key;
+            MSG.IsKeyDown = e;
+
             byte[] bytes = getBytesOfUDPMessage(MSG);
             if (Accept != null && ServerShotDown == false)
                 await Accept.SendToAsync(bytes, ClientendPoint);
@@ -432,6 +436,7 @@ namespace CToC.Server
             MSG.type = MessageType.MouseChange;
             MSG.MouseSide = mouseside;
             MSG.mousestate = state;
+            Debug.WriteLine(MSG.MouseSide + "  " + MSG.mousestate);
             byte[] bytes = getBytesOfUDPMessage(MSG);
 
 

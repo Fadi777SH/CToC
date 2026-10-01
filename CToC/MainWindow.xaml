@@ -6,11 +6,10 @@
         xmlns:local="clr-namespace:CToC"
         mc:Ignorable="d"
         Title="MainWindow" 
-        PreviewKeyDown="PC2Fram_PreviewKeyDown"
         Closed="Window_Closed"
         ResizeMode="CanMinimize"
-        Focusable="False"
-        MouseLeftButtonDown="Window_MouseLeftButtonDown"
+        PreviewKeyDown="Window_PreviewKeyDown"
+        PreviewKeyUp="Window_PreviewKeyDown"
         Width="1000" Height="600" Background="#FF201D1D">
     <Window.Resources>
         <Style TargetType="ToggleButton" x:Key="ToggelBtnStyle">
@@ -54,9 +53,8 @@
                     MouseMove="PC2Fram_MouseMove"
                     MouseDown="PC2Fram_MouseDown"
                     MouseUp="PC2Fram_MouseUp"
- 
                     MouseWheel="PC2Fram_MouseWheel"
-                    Focusable="False"
+                    Focusable="True"
                     Background="#FF6A1F1F"  >
                 <Image Name="Frames"  />
             </Border>

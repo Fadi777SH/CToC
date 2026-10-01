@@ -38,7 +38,7 @@ namespace CToC
 
         public  DispatcherQueue _dispatcherQueue;
 
-        public delegate void KeyPressHandler(System.Windows.Input.Key key);
+        public delegate void KeyPressHandler(System.Windows.Input.Key key,bool e);
         public static event KeyPressHandler? KeyPressEvent;
         public delegate void MousePressHandler(System.Windows.Input.MouseButton mouseButton, MouseButtonState state);
         public static event MousePressHandler? MousePressEvent;
@@ -279,12 +279,6 @@ namespace CToC
             return new(PercentofXfarFromTheABS, PercentofYfarFromTheABS);
         }
 
-        private void PC2Fram_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            if (this.PC2Fram.IsMouseOver == true)
-                KeyPressEvent?.Invoke(e.Key);
-        }
-
         private void Window_Closed(object sender, EventArgs e)
         {
             Server.Appclosed();
@@ -299,13 +293,13 @@ namespace CToC
         private void PC2Fram_MouseUp(object sender, MouseButtonEventArgs e)
         {
             MousePressEvent?.Invoke(e.ChangedButton, e.ButtonState);
-            Debug.WriteLine("up");
+
         }
 
         private void PC2Fram_MouseDown(object sender, MouseButtonEventArgs e)
         {
             MousePressEvent?.Invoke(e.ChangedButton, e.ButtonState);
-            Debug.WriteLine("down");
+
         }
 
         private void IPofRemote_TextChanged(object sender, TextChangedEventArgs e)
@@ -340,6 +334,15 @@ namespace CToC
                 {
                     IPOfWantedDevice.Focusable = false;
                 }
+            }
+        }
+
+
+        private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (PC2Fram.IsMouseOver)
+            {
+                KeyPressEvent?.Invoke(e.Key, e.IsDown);
             }
         }
     }
