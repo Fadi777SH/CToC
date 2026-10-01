@@ -52,7 +52,7 @@ namespace CToC
         TakeScreenSnippit screenDisplay;
         private IntPtr Handle;
 
-        UDPServerAsync uDPServerAsync;
+   
         public static event Action? EndServerConnection;
         public MainWindow()
         {
@@ -152,7 +152,7 @@ namespace CToC
                 IPAddress ipofpc1 = IPAddress.Parse(_IPAddress);
                 IPAddress ipofpc2 = IPAddress.Parse(this.PasswordOfController.Text);
 
-                uDPServerAsync = new(new IPEndPoint(ipofpc1, 22), new IPEndPoint(ipofpc2, 22));
+     
 
                 if (btn != null && btn.IsChecked == true)
                 {
@@ -315,9 +315,5 @@ namespace CToC
             MouseWheelevent?.Invoke(e.Delta);
         }
 
-        private void PC2Fram_MouseMove_1(object sender, System.Windows.Input.MouseEventArgs e)
-        {
-
-        }
     }
 }

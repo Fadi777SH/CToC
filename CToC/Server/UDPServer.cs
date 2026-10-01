@@ -44,38 +44,32 @@ namespace CToC.Server
         int ScreenHeight = SystemInformation.VirtualScreen.Height;
         EndPoint PcEndPoint;
         EndPoint ClientendPoint;
-        int ABSX = SystemInformation.VirtualScreen.X;
-        int ABSY = SystemInformation.VirtualScreen.Y;
 
         public delegate void framCapture(byte[] bytes);
         public static event framCapture? SingleFram;
         public delegate void ShowPic(byte[] bytes);
         public static event ShowPic? FrameArrived;
-        public delegate void SentFrameToPC2Handler(Bitmap bitmap);
-        public static event SentFrameToPC2Handler? SentFrameToPC2;
         public delegate void SentFrameToPC2Handlerbit(byte[] bytes);
         public static event SentFrameToPC2Handlerbit? SentFrameToPC2bytes;
         public FrameCapture frameCapture=new();
         #endregion
         private bool ContinueSend = true;
         private bool ContinueRecive = true;
-        public event EventHandler<SocketAsyncEventArgs>? Completed;
 
         public async Task Sender(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
             if (Accept?.Connected == true) return;
             Accept = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-           // Accept.NoDelay = true;
+
             Accept.Bind(new IPEndPoint(IPAddressOfPC1, PORT));
+
             ContinueSend = true;
             ContinueRecive = true;
             PcEndPoint = new IPEndPoint(IPAddressOfPC1, PORT);
             ClientendPoint = new IPEndPoint(IPAddressOfPC2, PORT);
 
- 
             //new
             await Accept.ConnectAsync(ClientendPoint);
-            
             
             new Thread(async delegate ()
             {
@@ -117,16 +111,6 @@ namespace CToC.Server
                         
                         Array.Resize(ref buf,size.ReceivedBytes);
                         FrameArrived?.Invoke(buf);
-                        //var MSG = FromByteArrayToUDPMessage(buf);
-                        //if (MSG.type == MessageType.Fram)
-                        //{
-                        //  FrameArrived?.Invoke(MSG.FramByte);
-                        //}
-                        //else if (MSG.type == MessageType.Error)
-                        //{
-                        //  MessageBox.Show(MSG.ErrorMessage);
-                        //break;
-                        //}
                         }
                         catch(Exception ex)
                         {
@@ -137,10 +121,6 @@ namespace CToC.Server
             }).Start();
         }
 
-        private void UdpServer_Completed(object? sender, SocketAsyncEventArgs e)
-        {
-            throw new NotImplementedException();
-        }
 
         public async Task Reciever(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
@@ -154,7 +134,7 @@ namespace CToC.Server
 
 
             //new
-           await Client.ConnectAsync(ClientendPoint);
+            await Client.ConnectAsync(ClientendPoint);
 
 
 
@@ -166,7 +146,7 @@ namespace CToC.Server
 
             new Thread(() =>
             {
-                SentFrameToPC2 += UDPServer_SentFrameToPC1;
+                if(ContinueSend)
                 SentFrameToPC2bytes += UdpServer_SentFrameToPC2bytes;
                 
             }).Start();
@@ -192,37 +172,35 @@ namespace CToC.Server
                         inputsime.Keyboard.KeyDown(key);
                         inputsime.Keyboard.KeyUp(key);
                     }
+
+
                     else if (MSG.type == MessageType.MouseWheelChange)
                     {
                         inputsime.Mouse.VerticalScroll(MSG.MouseWheelDelta);
                     }
-                    else if (MSG.type == MessageType.point)
+
+
+                    else if (MSG.type == MessageType.Mousepoint)
                     {
-
-                        int vWidth = SystemInformation.VirtualScreen.Width;
-                        int vHeight = SystemInformation.VirtualScreen.Height;
-
-                        double absX = (MSG.point.X) * (65535.0 / vWidth);
-                        double absY = (MSG.point.Y) * (65535.0 / vHeight);
-                        var P = GetPC2MousePos(MSG.point);
-                        //inputsime.Mouse.MoveMouseTo(absX, absY);
+                        var P = GetPC2MousePos(MSG.Mousepoint);
                         MousePosition.SetCursorPos((int)P.X, (int)P.Y);
                     }
+
                     else if (MSG.type == MessageType.MouseChange)
                     {
                         if (MSG.mousestate == MouseButtonState.Pressed)
                         {
                             if (MSG.MouseSide == System.Windows.Input.MouseButton.Left)
                             {
-                                inputsime.Mouse.LeftButtonClick();
+                                inputsime.Mouse.LeftButtonDown();
                             }
                             if (MSG.MouseSide == System.Windows.Input.MouseButton.Right)
                             {
-                                inputsime.Mouse.RightButtonClick();
+                                inputsime.Mouse.RightButtonDown();
                             }
                             if (MSG.MouseSide == System.Windows.Input.MouseButton.Middle)
                             {
-
+                                
                             }
                         }
                     }
@@ -239,72 +217,10 @@ namespace CToC.Server
 
 
         #region convertAndMessages
-        private async Task<SoftwareBitmap> GetSoftwareBitmap(IDirect3DSurface Surface)
-        {
-            using var softwareBitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(Surface);
-            return softwareBitmap;
-        }
-        private static byte[] MessageByteArrayFromBitmap(Bitmap bitmap)
-        {
-            using MemoryStream stream = new();
 
-            using var CompressedBitmap = ConversionClass.compressbitmap(bitmap, frameWidth, frameHeight);
-
-            CompressedBitmap.Save(stream, ImageFormat.Jpeg);
-            return stream.GetBuffer();
-        }
-        enum MessageType
-        {
-            Keyboard,
-            MouseChange,
-            point,
-            Fram,
-            Error,
-            MouseWheelChange
-        }
-        struct UDPMessage
-        {
-            
-            public MessageType type;
-            public int MouseWheelDelta;
-            public Key key;
-            public string ErrorMessage;
-            public System.Windows.Input.MouseButton MouseSide;
-            public System.Windows.Point point;
-            public int Width;
-            public int Height;
-            public byte[] FramByte;
-            public MouseButtonState mousestate;
-            public IDirect3DSurface surface;
-           
-
-        };
         
         static byte[] getBytesOfUDPMessage(UDPMessage str)
         {
-            int size = Marshal.SizeOf(str);
-
-            byte[] arr = new byte[255];
-            Array.Resize(ref arr, size);
-
-            IntPtr ptr = IntPtr.Zero;
-            try
-            {
-                ptr = Marshal.AllocHGlobal(size);
-                Marshal.StructureToPtr(str, ptr, false);
-                Marshal.Copy(ptr, arr, 0, size);
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(ptr);
-            }
-            return arr;
-        }
-        static byte[] getBytesOfFrame(Direct3DSurfaceDescription str)
-        {
-            
-
-            
             int size = Marshal.SizeOf(str);
 
             byte[] arr = new byte[255];
@@ -346,63 +262,25 @@ namespace CToC.Server
         #endregion
 
 
-        private void FrameMessage(ref byte[] StoreByte, byte[] bytes, int w, int h)
-        {
-            UDPMessage MSG = new();
-            MSG.type = MessageType.Fram;
-
-            MSG.Width = w;
-            MSG.Height = h;
-            MSG.FramByte = bytes;
-            var send = getBytesOfUDPMessage(MSG);
-            send = StoreByte;
-        }
-
-
-
 
         #region FrameCaptureRegion
         private static int frameWidth = 870;
         private static int frameHeight = 500;
         static Stopwatch stopwatch = new();
-        private async void UDPServer_SentFrameToPC1(Bitmap bitmap)
-        {
-
-
-            byte[] MessageByte = MessageByteArrayFromBitmap(bitmap);
-            if (MessageByte.Length >= 64000)
-            {
-                MessageBox.Show("you acceed the length limit of the message");
-            }
-
-            if (ClientendPoint != null && ContinueSend)
-            {
-                // UDPMessage MSG = new UDPMessage { type = MessageType.Fram, FramByte = stream.ToArray() };
-
-
-                Client?.SendToAsync(MessageByte, ClientendPoint);
-            }
-        }
         private async void UdpServer_SentFrameToPC2bytes(byte[] MessageByte)
         {
 
             if (MessageByte.Length >= 64000)
             {
-               // MessageBox.Show($"you acceed the length limit of the message \n the length was : {MessageByte.Length}");
+                MessageBox.Show($"you acceed the length limit of the message \n the length was : {MessageByte.Length}");
             }
 
             if (ClientendPoint != null && ContinueSend)
             {
-                // UDPMessage MSG = new UDPMessage { type = MessageType.Fram, FramByte = stream.ToArray() };
-
-
                Client?.SendToAsync(MessageByte, ClientendPoint);
-              
-                // to do , make the socket send a collection of data to help avoid legnth limit 
-               // Client?.SendPacketsAsync();
             }
             stopwatch.Stop();
-            Debug.WriteLine(stopwatch.ElapsedMilliseconds);
+            Debug.WriteLine($"{stopwatch.ElapsedMilliseconds} means {1000/stopwatch.ElapsedMilliseconds} FPS");
             stopwatch.Reset();
 
         }
@@ -421,51 +299,12 @@ namespace CToC.Server
                 var bytes = await FromSoftwarebitmapToBytes(softwareBitmap);
 
                 SentFrameToPC2bytes?.Invoke(bytes);
-               // SentFrameToPC2?.Invoke(bitmap);
 
             }
             
 
 
         }
-        private static async Task<byte[]> GetByteFromSoftWareBitmap(SoftwareBitmap softwareBitmap)
-        {
-            InMemoryRandomAccessStream stream = new();
-            BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.BmpEncoderId, stream);
-            encoder.SetSoftwareBitmap(softwareBitmap);
-            await encoder.FlushAsync();
-            byte[] buffer = new byte[stream.Size];
-
-            stream.Seek(0);
-            await stream.ReadAsync(buffer.AsBuffer(), (uint)stream.Size, InputStreamOptions.None);
-
-            return buffer;
-            
-        }
-        private static async Task<Bitmap?> FromSoftwarebitmapTobitmap(SoftwareBitmap softwareBitmap)
-        {
-
-
-            InMemoryRandomAccessStream stream = new InMemoryRandomAccessStream();
-           
-            BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.JpegEncoderId, stream);
-            
-
-            encoder.SetSoftwareBitmap(softwareBitmap);
-
-
-            await encoder.FlushAsync();
-
-
-         
-            
-            //try  to send byte of the bitmap
-
-            return  new(stream.AsStream());
-            
-            
-        }
-
 
         private static async Task<byte[]> FromSoftwarebitmapToBytes(SoftwareBitmap softwareBitmap)
         {
@@ -473,12 +312,12 @@ namespace CToC.Server
 
             InMemoryRandomAccessStream stream = new InMemoryRandomAccessStream();
 
-            BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.JpegEncoderId, stream);
+            BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.BmpEncoderId, stream);
 
             
             encoder.BitmapTransform.ScaledWidth = (uint)700;
             encoder.BitmapTransform.ScaledHeight = (uint)500;
-            encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.NearestNeighbor;
+            encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Linear;
             encoder.SetSoftwareBitmap(softwareBitmap);
             await encoder.FlushAsync();
 
@@ -491,11 +330,12 @@ namespace CToC.Server
         }
         #endregion
         #region ConnectionRagion
+        UDPMessage MSG = new();
         public void Appclosed()
         {
-            UDPMessage MSG = new();
+            MSG = new();
             MSG.ErrorMessage = "Disconnect from the remote computer";
-            MSG.type = MessageType.Error;
+            MSG.type =MessageType.Error;
             var B = getBytesOfUDPMessage(MSG);
             //Client?.SendToAsync(B, ClientendPoint);
         }
@@ -537,7 +377,7 @@ namespace CToC.Server
         public async void PressThisKey(Key key)
         {
 
-            UDPMessage MSG = new();
+            MSG = new();
 
 
             MSG.type = MessageType.Keyboard;
@@ -549,13 +389,13 @@ namespace CToC.Server
         public async void MouseChangepos(System.Windows.Point portion)
         {
 
-            UDPMessage MSG = new();
+             MSG = new();
 
 
-            MSG.type = MessageType.point;
+            MSG.type = MessageType.Mousepoint;
 
 
-            MSG.point = portion;
+            MSG.Mousepoint = portion;
 
             byte[] bytes = getBytesOfUDPMessage(MSG);
             if (Accept != null && ServerShotDown == false)
@@ -568,7 +408,7 @@ namespace CToC.Server
         public async void MousePressedDown(System.Windows.Input.MouseButton mouseside, MouseButtonState state)
         {
 
-            UDPMessage MSG = new();
+            MSG = new();
 
 
             MSG.type = MessageType.MouseChange;
@@ -586,10 +426,10 @@ namespace CToC.Server
         }
         private async void MainWindow_MouseWheelevent(int delta)
         {
-            UDPMessage MSG = new();
+            MSG = new();
 
 
-            MSG.type = MessageType.MouseWheelChange;
+            MSG.type =MessageType.MouseWheelChange;
             MSG.MouseWheelDelta = delta;
 
             byte[] bytes = getBytesOfUDPMessage(MSG);
