@@ -5,9 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CToC"
         mc:Ignorable="d"
-        Title="MainWindow" ResizeMode="NoResize"
+        Title="MainWindow" 
         PreviewKeyDown="PC2Fram_PreviewKeyDown"
         Closed="Window_Closed"
+        ResizeMode="CanMinimize"
+        
+        MouseLeftButtonDown="Window_MouseLeftButtonDown"
         Width="1000" Height="600" Background="#FF201D1D">
     <Window.Resources>
         <Style TargetType="ToggleButton" x:Key="ToggelBtnStyle">
@@ -41,23 +44,25 @@
         <Grid Width="1000" Height="500">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="0.1*"/>
-                <ColumnDefinition Name="PC2Grid" Width="0.70*"/>
+                <ColumnDefinition Name="PC2Grid" Width="0.70*" Focusable="True"/>
                 <ColumnDefinition Width="0.1*"/>
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0" Background="Transparent" VerticalAlignment="Stretch" />
             <Border Grid.Column="2" Background="Transparent" VerticalAlignment="Stretch" />
-            <Border Grid.Column="1" Width="700" Height="500"  Margin="0,0,0,0"  Name="PC2Fram" 
+            <Border Grid.Column="1" Width="800" Height="400"  Margin="0,0,0,0"  Name="PC2Fram" 
                     MouseMove="PC2Fram_MouseMove"
                     MouseDown="PC2Fram_MouseDown"
                     MouseUp="PC2Fram_MouseUp"
+                   
                     MouseWheel="PC2Fram_MouseWheel"
+                    Focusable="True"
                     Background="#FF6A1F1F"  >
                 <Image Name="Frames"  />
             </Border>
 
-            <ToggleButton Focusable="False"  Grid.Column="2" Name="PC2ToPC1" Style="{StaticResource ToggelBtnStyle}" Click="PC2ToPC1Checked"/>
-            <ToggleButton Focusable="False"  Grid.Column="0" Name="PC1ToPC2" Style="{StaticResource ToggelBtnStyle}" Click="PC1ToPC2Checked"/>
+            <ToggleButton Focusable="False"  Grid.Column="2" Name="PC2ToPC1" Style="{StaticResource ToggelBtnStyle}" Click="ConnectToRemoteBtn"/>
+            <ToggleButton Focusable="False"  Grid.Column="0" Name="PC1ToPC2" Style="{StaticResource ToggelBtnStyle}" Click="ConnectToWantedDeviceBtn"/>
 
             <TextBlock Foreground="White" Grid.Column="0" Height="20" Focusable="False" Margin="0,25,0,255" HorizontalAlignment="Center" Text="Your IP Address" FontFamily="Ebrima" />
             <TextBlock Foreground="White" Grid.Column="2" Height="20" Focusable="False" Margin="0,25,0,255" HorizontalAlignment="Center" Text="Your IP Address" FontFamily="Ebrima" />
@@ -67,9 +72,9 @@
             <TextBlock Foreground="White" Grid.Column="0" Height="20" Focusable="False" Margin="0,25,0,180" HorizontalAlignment="Center" Text="Second PC IP" FontFamily="Ebrima" />
             <TextBlock Foreground="White" Grid.Column="2" Height="20" Focusable="False" Margin="0,25,0,180" HorizontalAlignment="Center" Text="Second PC IP" FontFamily="Ebrima" />
 
-            <TextBox  Grid.Column="2" Name="PasswordOfController" Height="20" Width="100" Margin="0,25,0,140" HorizontalAlignment="Center" Text="192.168.100.74" FontFamily="Ebrima" TextChanged="changingpassword_PasswordOfController" />
-            <TextBox Grid.Column="0" Name="PasswordOfSender" Height="20" Width="100"   Margin="0,25,0,140" HorizontalAlignment="Center" Text="192.168.100.74" FontFamily="Ebrima" TextChanged="changingpassword_PasswordOfSender" />
-
+            <TextBox   Grid.Column="2" Name="IPofRemote" Height="20" Width="100" Margin="0,25,0,140" HorizontalAlignment="Center" Text="192.168.100.74" FontFamily="Ebrima" TextChanged="IPofRemote_TextChanged" />
+            <TextBox   Grid.Column="0" Name="IPOfWantedDevice" Height="20" Width="100"   Margin="0,25,0,140" HorizontalAlignment="Center" Text="192.168.100.74" FontFamily="Ebrima" TextChanged="IPOfWantedDevice_TextChanged"  />
+            
             <TextBlock Foreground="White" Focusable="False" 
                        VerticalAlignment="Top"
                        HorizontalAlignment="Center"

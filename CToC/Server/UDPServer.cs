@@ -287,7 +287,7 @@ namespace CToC.Server
 
             if (MessageByte.Length >= 64000)
             {
-                MessageBox.Show($"you acceed the length limit of the message \n the length was : {MessageByte.Length}");
+               // MessageBox.Show($"you acceed the length limit of the message \n the length was : {MessageByte.Length}");
             }
 
             if (ClientendPoint != null && ContinueSend)
@@ -326,18 +326,20 @@ namespace CToC.Server
 
 
             InMemoryRandomAccessStream stream = new InMemoryRandomAccessStream();
+     
 
             BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.BmpEncoderId, stream);
 
+
             
-            encoder.BitmapTransform.ScaledWidth = (uint)700;
-            encoder.BitmapTransform.ScaledHeight = (uint)500;
+            encoder.BitmapTransform.ScaledWidth = (uint)800;
+            encoder.BitmapTransform.ScaledHeight = (uint)400;
             encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Linear;
             encoder.SetSoftwareBitmap(softwareBitmap);
             await encoder.FlushAsync();
 
             var CompressedBytes = ConversionClass.Compress(stream.AsStream().CopyToBytes());
-            
+
 
             return CompressedBytes;
 

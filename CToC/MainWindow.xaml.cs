@@ -132,25 +132,25 @@ namespace CToC
 
         private void changingpassword_PasswordOfSender(object sender, System.Windows.Controls.TextChangedEventArgs e)
         {
-            if (this.PasswordOfSender.Text.Length > 15)
-                PasswordOfSender.Text = PasswordOfSender.Text.Substring(0, 4);
+            if (this.IPofRemote.Text.Length > 15)
+                IPofRemote.Text = IPofRemote.Text.Substring(0, 4);
 
         }
 
         private void changingpassword_PasswordOfController(object sender, System.Windows.Controls.TextChangedEventArgs e)
         {
-            if (this.PasswordOfController.Text.Length > 15)
-                PasswordOfController.Text = PasswordOfController.Text.Substring(0, 4);
+            if (this.IPOfWantedDevice.Text.Length > 15)
+                IPOfWantedDevice.Text = IPOfWantedDevice.Text.Substring(0, 4);
         }
 
-        private void PC2ToPC1Checked(object sender, RoutedEventArgs e)
+        private void ConnectToRemoteBtn(object sender, RoutedEventArgs e)
         {
             var btn = sender as ToggleButton;
 
             try
             {
                 IPAddress ipofpc1 = IPAddress.Parse(_IPAddress);
-                IPAddress ipofpc2 = IPAddress.Parse(this.PasswordOfController.Text);
+                IPAddress ipofpc2 = IPAddress.Parse(this.IPofRemote.Text);
 
      
 
@@ -192,14 +192,14 @@ namespace CToC
             }
         }
 
-        private void PC1ToPC2Checked(object sender, RoutedEventArgs e)
+        private void ConnectToWantedDeviceBtn(object sender, RoutedEventArgs e)
         {
             
             var btn = sender as ToggleButton;
             try
             {
                 IPAddress ipofpc1 = IPAddress.Parse(_IPAddress);
-                IPAddress ipofpc2 = IPAddress.Parse(this.PasswordOfSender.Text);
+                IPAddress ipofpc2 = IPAddress.Parse(this.IPOfWantedDevice.Text);
                 
                 if (btn?.IsChecked == true)
                 {
@@ -312,6 +312,41 @@ namespace CToC
         private void PC2Fram_MouseDown(object sender, MouseButtonEventArgs e)
         {
             MousePressEvent?.Invoke(e.ChangedButton, e.ButtonState);
+        }
+
+        private void IPofRemote_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (this.IPofRemote.Text.Length > 15)
+                IPofRemote.Text = IPofRemote.Text.Substring(0, 15);
+        }
+
+        private void IPOfWantedDevice_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (this.IPOfWantedDevice.Text.Length > 15)
+                IPOfWantedDevice.Text = IPOfWantedDevice.Text.Substring(0, 15);
+        }
+
+        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ButtonState == MouseButtonState.Pressed)
+            {   
+                if (IPofRemote.IsMouseOver)
+                {
+                    IPofRemote.Focusable = true;
+                }
+                else
+                {
+                    IPofRemote.Focusable = false;
+                }
+                if (IPOfWantedDevice.IsMouseOver)
+                {
+                    IPOfWantedDevice.Focusable = true;
+                }
+                else
+                {
+                    IPOfWantedDevice.Focusable = false;
+                }
+            }
         }
     }
 }
