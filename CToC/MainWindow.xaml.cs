@@ -287,17 +287,6 @@ namespace CToC
             return new(PercentofXfarFromTheABS, PercentofYfarFromTheABS);
         }
 
-
-        private void PC2Fram_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            MousePressEvent?.Invoke(System.Windows.Input.MouseButton.Left, e.LeftButton);
-        }
-
-        private void PC2Fram_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            MousePressEvent?.Invoke(System.Windows.Input.MouseButton.Right, e.RightButton);
-        }
-
         private void PC2Fram_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
             if (this.PC2Fram.IsMouseOver == true)
@@ -315,5 +304,14 @@ namespace CToC
             MouseWheelevent?.Invoke(e.Delta);
         }
 
+        private void PC2Fram_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            MousePressEvent?.Invoke(e.ChangedButton, e.ButtonState);
+        }
+
+        private void PC2Fram_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            MousePressEvent?.Invoke(e.ChangedButton, e.ButtonState);
+        }
     }
 }

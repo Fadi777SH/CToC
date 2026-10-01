@@ -203,6 +203,21 @@ namespace CToC.Server
                                 
                             }
                         }
+                        else if (MSG.mousestate == MouseButtonState.Released)
+                        {
+                            if (MSG.MouseSide == System.Windows.Input.MouseButton.Left)
+                            {
+                                inputsime.Mouse.LeftButtonUp();
+                            }
+                            if (MSG.MouseSide == System.Windows.Input.MouseButton.Right)
+                            {
+                                inputsime.Mouse.LeftButtonUp();
+                            }
+                            if (MSG.MouseSide == System.Windows.Input.MouseButton.Middle)
+                            {
+
+                            }
+                        }
                     }
 
                 }
