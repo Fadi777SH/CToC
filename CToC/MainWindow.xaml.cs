@@ -3,6 +3,8 @@ using CToC.Mouse;
 using CToC.Screen;
 using CToC.Server;
 using Microsoft.Graphics.Canvas;
+using Microsoft.Graphics.Canvas.Brushes;
+using Microsoft.Graphics.Canvas.UI;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 using System.Diagnostics;
 using System.Drawing.Imaging;
@@ -49,7 +51,7 @@ namespace CToC
         private int ScreenHeight = SystemInformation.VirtualScreen.Height;
         private int ScreenX = SystemInformation.VirtualScreen.X;
         private int ScreenY = SystemInformation.VirtualScreen.Y;
-        TakeScreenSnippit screenDisplay;
+
         private IntPtr Handle;
 
    
@@ -68,6 +70,7 @@ namespace CToC
 
 
             UdpServer.FrameArrived += TcpServer_DisplayFrame;
+            
             
         }
 
@@ -344,6 +347,7 @@ namespace CToC
             {
                 KeyPressEvent?.Invoke(e.Key, e.IsDown);
             }
+
         }
     }
 }

@@ -1,5 +1,8 @@
-﻿using CToC.Server;
-
+﻿using BinaryFormatter;
+using CToC.Server;
+using Microsoft.Graphics.Canvas;
+using Microsoft.Graphics.Canvas.Brushes;
+using Microsoft.Graphics.Canvas.UI.Xaml;
 using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.IO;
@@ -7,66 +10,20 @@ using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Windows.Media.Imaging;
+using Windows.Devices.Bluetooth.Advertisement;
 using Windows.Graphics;
 using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX;
 using Windows.Graphics.DirectX.Direct3D11;
 using Windows.Graphics.Imaging;
 using Windows.Storage.Compression;
+using Windows.Storage.Streams;
 using Windows.System;
 using Windows.UI.Composition;
-using BinaryFormatter;
-using Microsoft.Graphics.Canvas;
-using Windows.Storage.Streams;
-using Windows.Devices.Bluetooth.Advertisement;
+
+
 namespace CToC.Screen
 {
-
-    public class TakeScreenSnippit
-    {
-        [DllImport("user32.dll")]
-        private static extern IntPtr GetForegroundWindow();
-
-        [DllImport("user32.dll", CharSet = CharSet.Auto, ExactSpelling = true)]
-        public static extern IntPtr GetDesktopWindow();
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct Rect
-        {
-            public int Left;
-            public int Top;
-            public int Right;
-            public int Bottom;
-        }
-
-        [DllImport("user32.dll")]
-        private static extern IntPtr GetWindowRect(IntPtr hWnd, ref Rect rect);
-
-        public static Image CaptureDesktop()
-        {
-            return CaptureWindow(GetDesktopWindow());
-        }
-
-        public static Bitmap CaptureActiveWindow()
-        {
-            return CaptureWindow(GetForegroundWindow());
-        }
-
-        public static Bitmap CaptureWindow(IntPtr handle)
-        {
-            var rect = new Rect();
-            GetWindowRect(handle, ref rect);
-            var bounds = new Rectangle(rect.Left, rect.Top, rect.Right - rect.Left, rect.Bottom - rect.Top);
-            var result = new Bitmap(bounds.Width, bounds.Height);
-
-            using (var graphics = Graphics.FromImage(result))
-            {
-                graphics.CopyFromScreen(new Point(bounds.Left, bounds.Top), Point.Empty, bounds.Size);
-            }
-
-            return result;
-        }
-    }
 
     public class ConversionClass
     {
@@ -179,10 +136,7 @@ namespace CToC.Screen
         class any
         {
             public SoftwareBitmap s { get; set; }
-           public any()
-            {
 
-            }
         }
         
 
@@ -234,11 +188,12 @@ namespace CToC.Screen
 
 
         //private static Lazy<IDirect3DDevice> device = new(() => GetDirectdevice());
-        public  IDirect3DDevice dev;
+        public static IDirect3DDevice dev;
         private DirectXPixelFormat Format = DirectXPixelFormat.B8G8R8A8UIntNormalized;
 
+     
 
-        public  void Stream()
+        public void Stream()
         {
             if (StreamCurrentState == false)
             {
@@ -247,8 +202,10 @@ namespace CToC.Screen
                     _captureItem = GraphicsCaptureItem.TryCreateFromDisplayId(displayId);
                     
                     dev = GetDirectdevice();
+                    
 
                     _direct3D11CaptureFramePool = Direct3D11CaptureFramePool.CreateFreeThreaded(dev, Format, 1, new(ScreenWidth, ScreenHeight));
+                    
 
                     _direct3D11CaptureFramePool.FrameArrived += UdpServer._direct3D11CaptureFramePool_FrameArrived;
                     _graphicsCaptureSession = _direct3D11CaptureFramePool.CreateCaptureSession(_captureItem);
@@ -270,6 +227,7 @@ namespace CToC.Screen
             Dispose();
             StreamCurrentState = false;
         }
+
     }
 }
 

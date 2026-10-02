@@ -1,4 +1,5 @@
-﻿using CToC.Mouse;
+﻿using ABI.Windows.Graphics.DirectX.Direct3D11;
+using CToC.Mouse;
 using CToC.Screen;
 using ImageResizer.ExtensionMethods;
 using Microsoft.Graphics.Canvas;
@@ -11,6 +12,7 @@ using System.Net.Sockets;
 using System.Printing;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -23,7 +25,7 @@ using Windows.Media.Capture;
 using Windows.Storage.Streams;
 using WindowsInput;
 using static System.Windows.Forms.AxHost;
-using BitmapEncoder =Windows.Graphics.Imaging.BitmapEncoder;
+using BitmapEncoder = Windows.Graphics.Imaging.BitmapEncoder;
 using Point = System.Windows.Point;
 namespace CToC.Server
 {
@@ -39,7 +41,7 @@ namespace CToC.Server
 
         public static event Action? PC2DisConnect;
         private bool ServerShotDown = false;
-      
+
         int ScreenWidth = SystemInformation.VirtualScreen.Width;
         int ScreenHeight = SystemInformation.VirtualScreen.Height;
         EndPoint PcEndPoint;
@@ -51,7 +53,9 @@ namespace CToC.Server
         public static event ShowPic? FrameArrived;
         public delegate void SentFrameToPC2Handlerbit(byte[] bytes);
         public static event SentFrameToPC2Handlerbit? SentFrameToPC2bytes;
-        public FrameCapture frameCapture=new();
+        public delegate void ProcessDirectSurface(IDirect3DSurface surface);
+        public static event ProcessDirectSurface? ProcessDirecSurfaceEvent;
+        public FrameCapture frameCapture = new();
         #endregion
         private bool ContinueSend = true;
         private bool ContinueRecive = true;
@@ -70,7 +74,7 @@ namespace CToC.Server
 
             //new
             await Accept.ConnectAsync(ClientendPoint);
-            
+
             new Thread(async delegate ()
             {
                 try
@@ -81,9 +85,9 @@ namespace CToC.Server
                         MainWindow.MouseChange += MouseChangepos;
                         MainWindow.MousePressEvent += MousePressedDown;
                         MainWindow.MouseWheelevent += MainWindow_MouseWheelevent;
-                      
+
                     }
-                    
+
                 }
                 catch
                 {
@@ -100,21 +104,22 @@ namespace CToC.Server
 
             new Task(async () =>
             {
-               
+
                 while (ContinueRecive)
                 {
                     var buf = new byte[640000];
                     if (ClientendPoint != null)
                     {
-                        try { 
-                        var size = await Accept.ReceiveFromAsync(buf, ClientendPoint);
-                        
-                        Array.Resize(ref buf,size.ReceivedBytes);
-                        FrameArrived?.Invoke(buf);
-                        }
-                        catch(Exception ex)
+                        try
                         {
-                            MessageBox.Show(ex.Message);
+                            var size = await Accept.ReceiveFromAsync(buf, ClientendPoint);
+
+                            Array.Resize(ref buf, size.ReceivedBytes);
+                            FrameArrived?.Invoke(buf);
+                        }
+                        catch (Exception ex)
+                        {
+                           // MessageBox.Show(ex.Message);
                         }
                     }
                 }
@@ -126,7 +131,7 @@ namespace CToC.Server
         {
             inputsime = new();
             Client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-           
+
             Client.Bind(new IPEndPoint(IPAddressOfPC1, PORT));
 
             ClientendPoint = new IPEndPoint(IPAddressOfPC2, PORT);
@@ -146,11 +151,13 @@ namespace CToC.Server
 
             new Thread(() =>
             {
-                if(ContinueSend)
-                SentFrameToPC2bytes += UdpServer_SentFrameToPC2bytes;
-                
+                if (ContinueSend)
+                {
+                    SentFrameToPC2bytes += UdpServer_SentFrameToPC2bytes;
+                }
+
             }).Start();
-            
+
             while (ContinueRecive)
             {
 
@@ -159,9 +166,9 @@ namespace CToC.Server
                 byte[] RecievedByte = new byte[255];
                 try
                 {
-                    
 
-                    var size =await Client.ReceiveFromAsync(RecievedByte, ClientendPoint);
+
+                    var size = await Client.ReceiveFromAsync(RecievedByte, ClientendPoint);
                     Array.Resize(ref RecievedByte, size.ReceivedBytes);
 
                     UDPMessage MSG = FromByteArrayToUDPMessage(RecievedByte);
@@ -169,10 +176,10 @@ namespace CToC.Server
                     {
                         int vk = KeyInterop.VirtualKeyFromKey(MSG.key);
                         var key = (WindowsInput.Native.VirtualKeyCode)vk;
-                        if(MSG.IsKeyDown)
-                        inputsime.Keyboard.KeyDown(key);
+                        if (MSG.IsKeyDown)
+                            inputsime.Keyboard.KeyDown(key);
                         else
-                        inputsime.Keyboard.KeyUp(key);
+                            inputsime.Keyboard.KeyUp(key);
                     }
 
 
@@ -202,7 +209,7 @@ namespace CToC.Server
                             }
                             if (MSG.MouseSide == System.Windows.Input.MouseButton.Middle)
                             {
-                                
+
                             }
                         }
 
@@ -234,9 +241,11 @@ namespace CToC.Server
 
 
 
+
+
         #region convertAndMessages
 
-        
+
         static byte[] getBytesOfUDPMessage(UDPMessage str)
         {
             int size = Marshal.SizeOf(str);
@@ -290,76 +299,85 @@ namespace CToC.Server
 
             if (MessageByte.Length >= 64000)
             {
-               // MessageBox.Show($"you acceed the length limit of the message \n the length was : {MessageByte.Length}");
+                // MessageBox.Show($"you acceed the length limit of the message \n the length was : {MessageByte.Length}");
             }
 
             if (ClientendPoint != null && ContinueSend)
             {
-               Client?.SendToAsync(MessageByte, ClientendPoint);
+                Client?.SendToAsync(MessageByte, ClientendPoint);
             }
             stopwatch.Stop();
-            Debug.WriteLine($"{stopwatch.ElapsedMilliseconds} means {1000/stopwatch.ElapsedMilliseconds} FPS");
+            if(stopwatch.ElapsedMilliseconds!=0)
+                Debug.WriteLine($"{stopwatch.ElapsedMilliseconds} means {1000 / stopwatch.ElapsedMilliseconds} FPS");
             stopwatch.Reset();
 
         }
-        
-        public async static void _direct3D11CaptureFramePool_FrameArrived(Direct3D11CaptureFramePool sender, object args)
+
+        private static  CanvasDevice _canvasDevice => CanvasDevice.CreateFromDirect3D11Device(FrameCapture.dev);
+        private static readonly MemoryStream _frameStream = new MemoryStream(); // 1MB pre-allocated buffer
+        private static int _isProcessing = 0;
+
+        public static async void _direct3D11CaptureFramePool_FrameArrived(Direct3D11CaptureFramePool sender, object args)
         {
-
-            stopwatch.Start();
-            using var Frame = sender.TryGetNextFrame();
-
-            if (Frame != null)
-            {
-                
-                using var softwareBitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(Frame.Surface);
-
-                var bytes = await FromSoftwarebitmapToBytes(softwareBitmap);
-
-                SentFrameToPC2bytes?.Invoke(bytes);
-
-            }
             
+            if (Interlocked.CompareExchange(ref _isProcessing, 1, 0) != 0)
+                return;
 
+            try
+            {
+                using var frame = sender.TryGetNextFrame();
+               
+              
+                if (frame != null)
+                {
+                    stopwatch.Start();
+                    var bytes = await FastSurfaceToJpegBytesAsync(frame.Surface);
 
+                    SentFrameToPC2bytes?.Invoke(bytes);
+
+                }
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _isProcessing, 0);
+            }
         }
 
-        private static async Task<byte[]> FromSoftwarebitmapToBytes(SoftwareBitmap softwareBitmap)
+        private static async Task<byte[]> FastSurfaceToJpegBytesAsync(IDirect3DSurface surface)
         {
+            const int targetWidth = 800;
+            const int targetHeight = 400;
 
+            using var source = CanvasBitmap.CreateFromDirect3D11Surface(_canvasDevice, surface);
+            using var resized = new CanvasRenderTarget(_canvasDevice, targetWidth, targetHeight, 96);
 
-            InMemoryRandomAccessStream stream = new InMemoryRandomAccessStream();
-     
-
-            BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.BmpEncoderId, stream);
-
-
+            var ds = resized.CreateDrawingSession();
             
-            encoder.BitmapTransform.ScaledWidth = (uint)800;
-            encoder.BitmapTransform.ScaledHeight = (uint)400;
-            encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Linear;
-            encoder.SetSoftwareBitmap(softwareBitmap);
-            await encoder.FlushAsync();
+            ds.DrawImage(
+                    source,
+                    new Windows.Foundation.Rect(0, 0, targetWidth, targetHeight),
+                    source.Bounds,
+                    1.0f,
+                    CanvasImageInterpolation.Linear);
+            
 
-            var CompressedBytes = ConversionClass.Compress(stream.AsStream().CopyToBytes());
-
-
-            return CompressedBytes;
-
-
+            _frameStream.SetLength(0);
+            await resized.SaveAsync(_frameStream.AsRandomAccessStream(), CanvasBitmapFileFormat.Jpeg, 0.7f);
+       
+            return _frameStream.ToArray();
         }
         #endregion
-        #region ConnectionRagion
-        UDPMessage MSG = new();
+            #region ConnectionRagion
+            UDPMessage MSG = new();
         public void Appclosed()
         {
             MSG = new();
             MSG.ErrorMessage = "Disconnect from the remote computer";
-            MSG.type =MessageType.Error;
+            MSG.type = MessageType.Error;
             var B = getBytesOfUDPMessage(MSG);
             //Client?.SendToAsync(B, ClientendPoint);
         }
-        
+
         public void disconnectClient()
         {
             if (Client != null)
@@ -394,16 +412,16 @@ namespace CToC.Server
             var Ypoint = (portion.Y / 100) * ScreenHeight;
             return new(Xpoint, Ypoint);
         }
-        public async void PressThisKey(Key key,bool e)
+        public async void PressThisKey(Key key, bool e)
         {
 
             //skip pressing the Lwin and Rwin button
-            if (Key.LWin == key||key==Key.RWin) return;
+            if (Key.LWin == key || key == Key.RWin) return;
             MSG = new();
             MSG.type = MessageType.Keyboard;
             MSG.key = key;
             MSG.IsKeyDown = e;
-            
+
             byte[] bytes = getBytesOfUDPMessage(MSG);
             if (Accept != null && ServerShotDown == false)
                 await Accept.SendToAsync(bytes, ClientendPoint);
@@ -411,7 +429,7 @@ namespace CToC.Server
         public async void MouseChangepos(System.Windows.Point portion)
         {
 
-             MSG = new();
+            MSG = new();
 
 
             MSG.type = MessageType.Mousepoint;
@@ -423,7 +441,7 @@ namespace CToC.Server
             if (Accept != null && ServerShotDown == false)
             {
                 await Accept.SendToAsync(bytes, ClientendPoint);
-                
+
             }
 
         }
@@ -452,7 +470,7 @@ namespace CToC.Server
             MSG = new();
 
 
-            MSG.type =MessageType.MouseWheelChange;
+            MSG.type = MessageType.MouseWheelChange;
             MSG.MouseWheelDelta = delta;
 
             byte[] bytes = getBytesOfUDPMessage(MSG);
