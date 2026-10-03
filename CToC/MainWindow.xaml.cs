@@ -92,7 +92,7 @@ namespace CToC
                     if (_wb == null)
                     {
                         _wb = new WriteableBitmap(w, h, 96, 96, PixelFormats.Pbgra32, null);
-                        Frames.Source = _wb;
+                        this.Frames.Source = _wb;
                     }
 
                     _wb.WritePixels(new Int32Rect(0, 0, w, h), decompressbyte, w * 4, 0);

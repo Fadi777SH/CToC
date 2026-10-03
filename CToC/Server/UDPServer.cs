@@ -67,7 +67,7 @@ namespace CToC.Server
         public async Task Sender(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
             if (Accept?.Connected == true) return;
-            Accept = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Accept = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
             Accept.Bind(new IPEndPoint(IPAddressOfPC1, PORT));
             
@@ -109,6 +109,7 @@ namespace CToC.Server
 
             new Task(async () =>
             {
+                
 
                 while (ContinueRecive)
                 {
@@ -118,9 +119,10 @@ namespace CToC.Server
                         try
                         {
                             var size = await Accept.ReceiveFromAsync(buf, ClientendPoint);
-
+            
                             Array.Resize(ref buf, size.ReceivedBytes);
-                            //FrameArrived?.Invoke(buf);
+
+                            FrameArrived?.Invoke(buf,1920*1080*4);
                         }
                         catch (Exception ex)
                         {
@@ -135,7 +137,7 @@ namespace CToC.Server
         public async Task Reciever(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
             inputsime = new();
-            Client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
             Client.Bind(new IPEndPoint(IPAddressOfPC1, PORT));
 
@@ -174,7 +176,7 @@ namespace CToC.Server
 
 
                     var size = await Client.ReceiveFromAsync(RecievedByte, ClientendPoint);
-                    Array.Resize(ref RecievedByte, size.ReceivedBytes);
+                     Array.Resize(ref RecievedByte, size.ReceivedBytes);
 
                     UDPMessage MSG = FromByteArrayToUDPMessage(RecievedByte);
                     if (MSG.type == MessageType.Keyboard)
