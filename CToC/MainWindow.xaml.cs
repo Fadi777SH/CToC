@@ -2,6 +2,8 @@
 using CToC.Mouse;
 using CToC.Screen;
 using CToC.Server;
+using K4os.Compression.LZ4;
+using K4os.Compression.LZ4.Encoders;
 using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.Brushes;
 using Microsoft.Graphics.Canvas.UI;
@@ -20,7 +22,9 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Windows.Graphics.Capture;
+using Windows.Graphics.DirectX;
 using Windows.Graphics.Imaging;
+using Windows.Storage.Compression;
 using Windows.Storage.Streams;
 using Windows.System;
 using BitmapEncoder = Windows.Graphics.Imaging.BitmapEncoder;
@@ -73,14 +77,27 @@ namespace CToC
             
             
         }
-
-        private async void TcpServer_DisplayFrame(byte[] bytes)
+        private WriteableBitmap _wb;
+        private async void TcpServer_DisplayFrame(byte[] bytes,int raw)
         {
             try
             {
-                var decompressbyte = ConversionClass.Decompress(bytes);
-                var ImageSource = ConvertToImageSource(decompressbyte);
-                this.Dispatcher.Invoke(() => this.Frames.Source = ImageSource);
+                var decompressbyte = new byte[raw];
+                var delta = LZ4Codec.Decode(bytes,0,bytes.Length,decompressbyte,0,decompressbyte.Length);
+               
+                var ImageSource = ConvertToImageSource2(decompressbyte);
+                this.Dispatcher.Invoke(() => {
+                    const int w = 1920, h = 1080;
+
+                    if (_wb == null)
+                    {
+                        _wb = new WriteableBitmap(w, h, 96, 96, PixelFormats.Pbgra32, null);
+                        Frames.Source = _wb;
+                    }
+
+                    _wb.WritePixels(new Int32Rect(0, 0, w, h), decompressbyte, w * 4, 0);
+
+            });
             }
             catch(Exception ex)
             {
@@ -89,12 +106,13 @@ namespace CToC
 
 
         }
+        static CanvasDevice  device => CanvasDevice.CreateFromDirect3D11Device(FrameCapture.dev);
 
         public static BitmapImage ConvertToImageSource(byte[] bytes)
         {
             using (var ms = new MemoryStream(bytes))
             {
-
+                var rt = CanvasRenderTarget.CreateFromBytes(device,bytes,400,400,Windows.Graphics.DirectX.DirectXPixelFormat.Unknown);
                 ms.Position = 0;
                
                 var bitmapImage = new BitmapImage();
@@ -109,6 +127,19 @@ namespace CToC
             }
         }
 
+        public static ImageSource ConvertToImageSource2(byte[] bytes)
+        {
+            int w =1920;
+            int h = 1080;
+
+
+            WriteableBitmap wb = new WriteableBitmap(w, h, 96, 96,PixelFormats.Pbgra32, null);
+
+            wb.WritePixels(new Int32Rect(0, 0, w, h), bytes, w * 4, 0);
+           
+            return  wb;
+
+        }
         public string _IPAddress
         {
             get

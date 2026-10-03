@@ -2,8 +2,10 @@
 using CToC.Mouse;
 using CToC.Screen;
 using ImageResizer.ExtensionMethods;
+using K4os.Compression.LZ4;
 using Microsoft.Graphics.Canvas;
 using SharpDX.DXGI;
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.IO;
@@ -17,6 +19,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Media.Media3D;
 using Vortice.Win32;
 using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX.Direct3D11;
@@ -25,6 +28,7 @@ using Windows.Media.Capture;
 using Windows.Storage.Streams;
 using WindowsInput;
 using static System.Windows.Forms.AxHost;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 using BitmapEncoder = Windows.Graphics.Imaging.BitmapEncoder;
 using Point = System.Windows.Point;
 namespace CToC.Server
@@ -49,7 +53,7 @@ namespace CToC.Server
 
         public delegate void framCapture(byte[] bytes);
         public static event framCapture? SingleFram;
-        public delegate void ShowPic(byte[] bytes);
+        public delegate void ShowPic(byte[] bytes, int raw);
         public static event ShowPic? FrameArrived;
         public delegate void SentFrameToPC2Handlerbit(byte[] bytes);
         public static event SentFrameToPC2Handlerbit? SentFrameToPC2bytes;
@@ -63,14 +67,15 @@ namespace CToC.Server
         public async Task Sender(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
             if (Accept?.Connected == true) return;
-            Accept = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            Accept = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
             Accept.Bind(new IPEndPoint(IPAddressOfPC1, PORT));
-
+            
             ContinueSend = true;
             ContinueRecive = true;
             PcEndPoint = new IPEndPoint(IPAddressOfPC1, PORT);
             ClientendPoint = new IPEndPoint(IPAddressOfPC2, PORT);
+            
 
             //new
             await Accept.ConnectAsync(ClientendPoint);
@@ -115,7 +120,7 @@ namespace CToC.Server
                             var size = await Accept.ReceiveFromAsync(buf, ClientendPoint);
 
                             Array.Resize(ref buf, size.ReceivedBytes);
-                            FrameArrived?.Invoke(buf);
+                            //FrameArrived?.Invoke(buf);
                         }
                         catch (Exception ex)
                         {
@@ -130,7 +135,7 @@ namespace CToC.Server
         public async Task Reciever(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
             inputsime = new();
-            Client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            Client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
             Client.Bind(new IPEndPoint(IPAddressOfPC1, PORT));
 
@@ -246,7 +251,7 @@ namespace CToC.Server
         #region convertAndMessages
 
 
-        static byte[] getBytesOfUDPMessage(UDPMessage str)
+        static byte[] getBytesOfUDPMessage<T>(T str)
         {
             int size = Marshal.SizeOf(str);
 
@@ -296,16 +301,16 @@ namespace CToC.Server
         static Stopwatch stopwatch = new();
         private async void UdpServer_SentFrameToPC2bytes(byte[] MessageByte)
         {
-
             if (MessageByte.Length >= 64000)
             {
-                // MessageBox.Show($"you acceed the length limit of the message \n the length was : {MessageByte.Length}");
+              //  System.Windows.MessageBox.Show($"you acceed the length limit of the message \n the length was : {MessageByte.Length}");
             }
 
             if (ClientendPoint != null && ContinueSend)
             {
-                Client?.SendToAsync(MessageByte, ClientendPoint);
+              Client?.SendToAsync(MessageByte, ClientendPoint);
             }
+
             stopwatch.Stop();
             if(stopwatch.ElapsedMilliseconds!=0)
                 Debug.WriteLine($"{stopwatch.ElapsedMilliseconds} means {1000 / stopwatch.ElapsedMilliseconds} FPS");
@@ -314,12 +319,12 @@ namespace CToC.Server
         }
 
         private static  CanvasDevice _canvasDevice => CanvasDevice.CreateFromDirect3D11Device(FrameCapture.dev);
-        private static readonly MemoryStream _frameStream = new MemoryStream(); // 1MB pre-allocated buffer
+
         private static int _isProcessing = 0;
 
         public static async void _direct3D11CaptureFramePool_FrameArrived(Direct3D11CaptureFramePool sender, object args)
         {
-            
+            stopwatch.Start();
             if (Interlocked.CompareExchange(ref _isProcessing, 1, 0) != 0)
                 return;
 
@@ -330,8 +335,8 @@ namespace CToC.Server
               
                 if (frame != null)
                 {
-                    stopwatch.Start();
-                    var bytes = await FastSurfaceToJpegBytesAsync(frame.Surface);
+                   
+                    var bytes =  FastSurfaceToJpegBytesAsync(frame.Surface);
 
                     SentFrameToPC2bytes?.Invoke(bytes);
 
@@ -343,32 +348,22 @@ namespace CToC.Server
             }
         }
 
-        private static async Task<byte[]> FastSurfaceToJpegBytesAsync(IDirect3DSurface surface)
+        private static byte[] FastSurfaceToJpegBytesAsync(IDirect3DSurface surface)
         {
-            const int targetWidth = 800;
-            const int targetHeight = 400;
 
-            using var source = CanvasBitmap.CreateFromDirect3D11Surface(_canvasDevice, surface);
-            using var resized = new CanvasRenderTarget(_canvasDevice, targetWidth, targetHeight, 96);
+            var _renderTargetBitmap = CanvasRenderTarget.CreateFromDirect3D11Surface(_canvasDevice, surface);
 
-            var ds = resized.CreateDrawingSession();
-            
-            ds.DrawImage(
-                    source,
-                    new Windows.Foundation.Rect(0, 0, targetWidth, targetHeight),
-                    source.Bounds,
-                    1.0f,
-                    CanvasImageInterpolation.Linear);
-            
+            byte[] raw =_renderTargetBitmap.GetPixelBytes();
 
-            _frameStream.SetLength(0);
-            await resized.SaveAsync(_frameStream.AsRandomAccessStream(), CanvasBitmapFileFormat.Jpeg, 0.7f);
-       
-            return _frameStream.ToArray();
-        }
+ 
+            var compressed = new byte[LZ4Codec.MaximumOutputSize(raw.Length)];
+            int size = LZ4Codec.Encode(raw, 0, raw.Length, compressed, 0, compressed.Length,LZ4Level.L00_FAST);
+    
+            return compressed;
+        }   
         #endregion
-            #region ConnectionRagion
-            UDPMessage MSG = new();
+        #region ConnectionRagion
+        UDPMessage MSG = new();
         public void Appclosed()
         {
             MSG = new();

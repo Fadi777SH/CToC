@@ -13,6 +13,13 @@ using Windows.Storage.Streams;
 
 namespace CToC
 {
+    class Transfer
+    {
+        public byte[] Buffer;
+        public bool[] Got;
+        public int Received;
+        public Transfer(int total, int count) { Buffer = new byte[total]; Got = new bool[count]; }
+    }
     public enum MessageType
     {
         Keyboard,
