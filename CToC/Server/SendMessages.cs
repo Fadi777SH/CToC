@@ -7,6 +7,7 @@ using Microsoft.Graphics.Canvas.UI.Xaml;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Windows.Input;
@@ -67,7 +68,6 @@ namespace CToC
         public System.Windows.Point Mousepoint;
         public int Width;
         public int Height;
-        public byte[] FramByte;
         public MouseButtonState mousestate;
 
 
@@ -75,8 +75,20 @@ namespace CToC
     public struct UDPframeMessage
     {
        public int totalChunks;
-      public  int CurrentChunkNumber;
-       public byte[] ChunkByteArray;
+       public  int CurrentChunkNumber;
+        public int ShouldResizeTo;
+
+        [MarshalAs(UnmanagedType.ByValArray,SizeConst =64000)]
+        public byte[] ChunkByteArray;
+        public UDPframeMessage(int tot,int current, byte[] framebyte,int resize)
+        {
+            totalChunks = tot;
+            ShouldResizeTo = resize;
+            CurrentChunkNumber =current;
+            ChunkByteArray = new byte[64000];
+            framebyte.CopyTo(ChunkByteArray);
+            
+        }
 
     };
 }

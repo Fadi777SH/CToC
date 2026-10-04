@@ -96,28 +96,33 @@ namespace CToC.Server
 
             new Task(async () =>
             {
-                System.Collections.Generic.IEnumerable<byte> Concate = new byte[640000];
+                System.Collections.Generic.IEnumerable<byte> Concate = new byte[65000];
 
                 while (ContinueRecive)
                 {
-                    var buf = new byte[640000];
+                    var buf = new byte[650000];
                    
                     if (ClientendPoint != null)
                     {
                         try
                         {
                             var size = await Accept.ReceiveFromAsync(buf, ClientendPoint);
-
+                             Array.Resize(ref buf, size.ReceivedBytes);
+                            Debug.WriteLine(size.ReceivedBytes);
                             var UDPMSG = FromByteArrayToUDPFrameMessage(buf);
+
+                            if( UDPMSG.ChunkByteArray.Length!=UDPMSG.ShouldResizeTo)
+                            Array.Resize(ref UDPMSG.ChunkByteArray, UDPMSG.ShouldResizeTo);
+
                             if( UDPMSG.CurrentChunkNumber < UDPMSG.totalChunks)
                             {
-                                Concate = Concate.Concat(MSG.FramByte);
+                                Concate = Concate.Concat(UDPMSG.ChunkByteArray);
                             }
                             else if (UDPMSG.totalChunks == UDPMSG.CurrentChunkNumber)
                             {
                                 FrameArrived?.Invoke(Concate.ToArray(), 1920 * 1080 * 4);
                                 
-                                Concate =new byte[255];
+                                Concate =new byte[64000];
                             }
                             //Array.Resize(ref buf, size.ReceivedBytes);
                             
@@ -131,6 +136,8 @@ namespace CToC.Server
                     }
                 }
             }).Start();
+
+
         }
 
 
@@ -177,7 +184,7 @@ namespace CToC.Server
 
                     var size = await Client.ReceiveFromAsync(RecievedByte, ClientendPoint);
                      Array.Resize(ref RecievedByte, size.ReceivedBytes);
-
+ 
                     UDPMessage MSG = FromByteArrayToUDPMessage(RecievedByte);
                     if (MSG.type == MessageType.Keyboard)
                     {
@@ -256,14 +263,16 @@ namespace CToC.Server
         static byte[] getBytesOfUDPMessage<T>(T str)
         {
             int size = Marshal.SizeOf(str);
+            
+            byte[] arr = new byte[65000];
 
-            byte[] arr = new byte[255];
             Array.Resize(ref arr, size);
-
+            
             IntPtr ptr = IntPtr.Zero;
             try
             {
                 ptr = Marshal.AllocHGlobal(size);
+ 
                 Marshal.StructureToPtr(str, ptr, false);
                 Marshal.Copy(ptr, arr, 0, size);
             }
@@ -307,6 +316,10 @@ namespace CToC.Server
 
                 str = (UDPframeMessage)Marshal.PtrToStructure(ptr, str.GetType());
             }
+            catch(Exception ex)
+            {
+              System.Windows.MessageBox.Show(ex.Message);
+            }
             finally
             {
                 Marshal.FreeHGlobal(ptr);
@@ -329,8 +342,11 @@ namespace CToC.Server
             var count = 0;
             foreach(var buf in subBuffers)
             {
-                var MSG = new UDPframeMessage() { totalChunks = totalchunks, ChunkByteArray = buf, CurrentChunkNumber=count};
+                var MSG = new UDPframeMessage( totalchunks,count,buf,buf.Length);
+
                 var UDPMSG = getBytesOfUDPMessage(MSG);
+                
+
                 Client?.SendToAsync(UDPMSG, ClientendPoint);
                 count++;
             }
