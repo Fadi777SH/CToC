@@ -98,6 +98,7 @@ namespace CToC.Server
             {
                 System.Collections.Generic.IEnumerable<byte> Concate = new byte[65000];
 
+
                 while (ContinueRecive)
                 {
                     var buf = new byte[650000];
@@ -111,14 +112,20 @@ namespace CToC.Server
                           
                             var UDPMSG = FromByteArrayToUDPFrameMessage(buf);
 
-                            if( UDPMSG.ChunkByteArray.Length!=UDPMSG.ShouldResizeTo)
-                            Array.Resize(ref UDPMSG.ChunkByteArray, UDPMSG.ShouldResizeTo);
+                
+                            
 
                             if( UDPMSG.CurrentChunkNumber < UDPMSG.totalChunks)
                             {
                                 Concate = Concate.Concat(UDPMSG.ChunkByteArray);
                             }
-                            else if (UDPMSG.totalChunks == UDPMSG.CurrentChunkNumber)
+
+                            //last chunk
+                            else if(UDPMSG.CurrentChunkNumber == UDPMSG.totalChunks)
+                                {
+                                    Array.Resize(ref UDPMSG.ChunkByteArray, UDPMSG.ShouldResizeTo);
+                                }
+                            if (UDPMSG.totalChunks == UDPMSG.CurrentChunkNumber)
                             {
                                 FrameArrived?.Invoke(Concate.ToArray(), 1920 * 1080 * 4);
                                 
@@ -339,7 +346,7 @@ namespace CToC.Server
 
             var subBuffers = _MessageByte.Chunk(64000);
             var totalchunks = subBuffers.Count();
-            var count = 1;
+            var count = 0;
             foreach(var buf in subBuffers)
             {
                 count++;
@@ -352,17 +359,14 @@ namespace CToC.Server
                 
             }
           
-            stopwatch.Stop();
-            if (stopwatch.ElapsedMilliseconds != 0)
-                Debug.WriteLine($"{stopwatch.ElapsedMilliseconds} means {1000 / stopwatch.ElapsedMilliseconds} FPS");
-            stopwatch.Reset();
+
         }
 
         private static  CanvasDevice _canvasDevice => CanvasDevice.CreateFromDirect3D11Device(FrameCapture.dev);
 
         public static async void _direct3D11CaptureFramePool_FrameArrived(Direct3D11CaptureFramePool sender, object args)
         {
-            stopwatch.Start();
+   
             try
             {
                 using var frame = sender.TryGetNextFrame();
