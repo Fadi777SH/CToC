@@ -78,12 +78,12 @@ namespace CToC
             
         }
         private WriteableBitmap _wb;
-        private async void TcpServer_DisplayFrame(byte[] bytes,int raw)
+        private async void TcpServer_DisplayFrame(byte[] bytes)
         {
             try
             {
                 const int w = 1920, h = 1080;
-                var decompressbyte = new byte[raw];
+                var decompressbyte = new byte[h * w*4];
                 var delta = LZ4Codec.Decode(bytes,0,bytes.Length,decompressbyte,0,decompressbyte.Length);
               
                 this.Dispatcher.Invoke(() => {

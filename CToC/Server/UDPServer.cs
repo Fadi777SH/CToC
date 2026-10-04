@@ -2,6 +2,7 @@
 using CToC.Screen;
 using FFMpegCore;
 using FFMpegCore.Pipes;
+using ICSharpCode.NRefactory.CSharp;
 using K4os.Compression.LZ4;
 using Microsoft.Graphics.Canvas;
 using SharpDX.DXGI;
@@ -10,6 +11,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Windows;
 using System.Windows.Input;
 using Windows.Graphics.Capture;
@@ -40,7 +42,7 @@ namespace CToC.Server
 
         public delegate void framCapture(byte[] bytes);
         public static event framCapture? SingleFram;
-        public delegate void ShowPic(byte[] bytes, int raw);
+        public delegate void ShowPic(byte[] bytes);
         public static event ShowPic? FrameArrived;
         public delegate void SentFrameToPC2Handlerbit(byte[] bytes);
         public static event SentFrameToPC2Handlerbit? SentFrameToPC2bytes;
@@ -50,7 +52,7 @@ namespace CToC.Server
         #endregion
         private bool ContinueSend = true;
         private bool ContinueRecive = true;
-
+        private const int _SingleFrameChunk = 64000;
         public async Task Sender(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
             if (Accept?.Connected == true) return;
@@ -81,10 +83,10 @@ namespace CToC.Server
                     }
 
                 }
-                catch
+                catch(Exception ex)
                 {
 
-                    System.Windows.MessageBox.Show("Error");
+                    System.Windows.MessageBox.Show(ex.Message);
                     PC2DisConnect?.Invoke();
 
                 }
@@ -96,8 +98,8 @@ namespace CToC.Server
 
             new Task(async () =>
             {
-                System.Collections.Generic.IEnumerable<byte> Concate = new byte[65000];
-
+                System.Collections.Generic.IEnumerable<byte> Concate = new byte[0];
+                int currentfingerprint = 0;
 
                 while (ContinueRecive)
                 {
@@ -112,33 +114,38 @@ namespace CToC.Server
                           
                             var UDPMSG = FromByteArrayToUDPFrameMessage(buf);
 
-                
-                            
-
-                            if( UDPMSG.CurrentChunkNumber < UDPMSG.totalChunks)
+                            if (currentfingerprint != UDPMSG.FrameFingerPrint)
                             {
-                                Concate = Concate.Concat(UDPMSG.ChunkByteArray);
-                            }
+                                currentfingerprint = UDPMSG.FrameFingerPrint;
 
-                            //last chunk
-                            else if(UDPMSG.CurrentChunkNumber == UDPMSG.totalChunks)
+                                Concate = new byte[65000];
+                                
+                            }
+                            if (currentfingerprint == UDPMSG.FrameFingerPrint)
+                            {
+
+                                if (UDPMSG.CurrentChunkNumber < UDPMSG.totalChunks)
+                                {
+                                    Concate = Concate.Concat(UDPMSG.ChunkByteArray);
+                                }
+
+                                //last chunk
+                                if (UDPMSG.CurrentChunkNumber == UDPMSG.totalChunks)
                                 {
                                     Array.Resize(ref UDPMSG.ChunkByteArray, UDPMSG.ShouldResizeTo);
+
+                                    Concate = Concate.Concat(UDPMSG.ChunkByteArray);
+
+
+                                    FrameArrived?.Invoke(Concate.ToArray());
                                 }
-                            if (UDPMSG.totalChunks == UDPMSG.CurrentChunkNumber)
-                            {
-                                FrameArrived?.Invoke(Concate.ToArray(), 1920 * 1080 * 4);
-                                
-                                Concate =new byte[65000];
                             }
-                            //Array.Resize(ref buf, size.ReceivedBytes);
-                            
 
                            
                         }
                         catch (Exception ex)
                         {
-                           // MessageBox.Show(ex.Message);
+                          System.Windows.MessageBox.Show(ex.Message);
                         }
                     }
                 }
@@ -151,12 +158,12 @@ namespace CToC.Server
         public async Task Reciever(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
             inputsime = new();
-            Client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            Client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp) ;
 
             Client.Bind(new IPEndPoint(IPAddressOfPC1, PORT));
 
             ClientendPoint = new IPEndPoint(IPAddressOfPC2, PORT);
-
+            
 
 
             //new
@@ -338,19 +345,20 @@ namespace CToC.Server
 
 
         #region FrameCaptureRegion
-        private static int frameWidth = 870;
-        private static int frameHeight = 500;
-        static Stopwatch stopwatch = new();
+
+        Random random = new();
         private async void UdpServer_SentFrameToPC2bytes(byte[] _MessageByte)
         {
 
-            var subBuffers = _MessageByte.Chunk(64000);
+            var subBuffers = _MessageByte.Chunk(_SingleFrameChunk);
             var totalchunks = subBuffers.Count();
             var count = 0;
+            var RandomFingerPrint=random.Next(0,10000);
             foreach(var buf in subBuffers)
             {
                 count++;
-                var MSG = new UDPframeMessage( totalchunks,count,buf,buf.Length);
+
+                var MSG = new UDPframeMessage( totalchunks,count,buf,buf.Length,RandomFingerPrint);
 
                 var UDPMSG = getBytesOfUDPMessage(MSG);
                 
@@ -374,7 +382,7 @@ namespace CToC.Server
 
                 if (frame != null)
                 {
-
+                    
                     var bytes = LZ4Compression(frame.Surface);
                     SentFrameToPC2bytes?.Invoke(bytes);
 
@@ -412,27 +420,6 @@ namespace CToC.Server
             }
             return bytes;
 
-        }
-        static async Task<byte[]> CompressSurfaceAsync(IDirect3DSurface surface, uint w, uint h)
-        {
-            using var ms = new MemoryStream();
-            using SoftwareBitmap sb = await SoftwareBitmap.CreateCopyFromSurfaceAsync(surface);
-
-            var frame =new SoftwareBitmapFrame(sb);   // class from my earlier message
-            var source = new RawVideoPipeSource(new IVideoFrame[] { frame }) { FrameRate = 30 };
-
-
-            await FFMpegArguments
-                .FromPipeInput(new RawVideoPipeSource(new[] { frame}) { FrameRate = 30 })
-                .OutputToPipe(new StreamPipeSink(ms), o => o
-                    .WithVideoCodec("libx265")
-                    .WithConstantRateFactor(28)
-                    .ForcePixelFormat("yuv420p")
-                    .ForceFormat("hevc"))          // raw Annex B bitstream, pipe-friendly
-                .ProcessAsynchronously();
-
-            byte[] bytes = ms.ToArray();
-            return bytes;
         }
         #endregion
         #region ConnectionRagion
