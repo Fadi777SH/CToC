@@ -13,6 +13,10 @@
 
   <ItemGroup>
     <PackageReference Include="BinaryFormatter" Version="3.0.0" />
+    <PackageReference Include="CUDAfy.NET" Version="1.29.5576.13786" />
+    <PackageReference Include="FFmpeg.AutoGen" Version="9.0.1.1" />
+    <PackageReference Include="FFmpegArgs" Version="2.2.0" />
+    <PackageReference Include="FFMpegCore" Version="5.5.0" />
     <PackageReference Include="ImageResizer" Version="4.2.8" />
     <PackageReference Include="InputSimulator" Version="1.0.4" />
     <PackageReference Include="K4os.Compression.LZ4" Version="1.3.8" />
@@ -22,7 +26,6 @@
     <PackageReference Include="SharpDX.Direct3D11" Version="4.2.0" />
     <PackageReference Include="SharpDX.DXGI" Version="4.2.0" />
     <PackageReference Include="System.ServiceModel.Primitives" Version="10.0.652802" />
-    <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
    
   </ItemGroup>
 

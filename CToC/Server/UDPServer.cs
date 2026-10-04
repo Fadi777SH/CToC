@@ -1,35 +1,22 @@
-﻿using ABI.Windows.Graphics.DirectX.Direct3D11;
-using CToC.Mouse;
+﻿using CToC.Mouse;
 using CToC.Screen;
-using ImageResizer.ExtensionMethods;
+using FFMpegCore;
+using FFMpegCore.Pipes;
 using K4os.Compression.LZ4;
 using Microsoft.Graphics.Canvas;
 using SharpDX.DXGI;
-using System.Buffers.Binary;
 using System.Diagnostics;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Printing;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Interop;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Media.Media3D;
-using Vortice.Win32;
 using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX.Direct3D11;
 using Windows.Graphics.Imaging;
-using Windows.Media.Capture;
-using Windows.Storage.Streams;
+using Windows.Media.Core;
 using WindowsInput;
-using static System.Windows.Forms.AxHost;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
-using BitmapEncoder = Windows.Graphics.Imaging.BitmapEncoder;
 using Point = System.Windows.Point;
 namespace CToC.Server
 {
@@ -109,20 +96,33 @@ namespace CToC.Server
 
             new Task(async () =>
             {
-                
+                System.Collections.Generic.IEnumerable<byte> Concate = new byte[640000];
 
                 while (ContinueRecive)
                 {
                     var buf = new byte[640000];
+                   
                     if (ClientendPoint != null)
                     {
                         try
                         {
                             var size = await Accept.ReceiveFromAsync(buf, ClientendPoint);
-            
-                            Array.Resize(ref buf, size.ReceivedBytes);
 
-                            FrameArrived?.Invoke(buf,1920*1080*4);
+                            var UDPMSG = FromByteArrayToUDPFrameMessage(buf);
+                            if( UDPMSG.CurrentChunkNumber < UDPMSG.totalChunks)
+                            {
+                                Concate = Concate.Concat(MSG.FramByte);
+                            }
+                            else if (UDPMSG.totalChunks == UDPMSG.CurrentChunkNumber)
+                            {
+                                FrameArrived?.Invoke(Concate.ToArray(), 1920 * 1080 * 4);
+                                
+                                Concate =new byte[255];
+                            }
+                            //Array.Resize(ref buf, size.ReceivedBytes);
+                            
+
+                           
                         }
                         catch (Exception ex)
                         {
@@ -293,6 +293,26 @@ namespace CToC.Server
             }
             return str;
         }
+        UDPframeMessage FromByteArrayToUDPFrameMessage(byte[] arr)
+        {
+            UDPframeMessage str = new UDPframeMessage();
+
+            int size = Marshal.SizeOf(str);
+            IntPtr ptr = IntPtr.Zero;
+            try
+            {
+                ptr = Marshal.AllocHGlobal(size);
+
+                Marshal.Copy(arr, 0, ptr, size);
+
+                str = (UDPframeMessage)Marshal.PtrToStructure(ptr, str.GetType());
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(ptr);
+            }
+            return str;
+        }
         #endregion
 
 
@@ -301,68 +321,100 @@ namespace CToC.Server
         private static int frameWidth = 870;
         private static int frameHeight = 500;
         static Stopwatch stopwatch = new();
-        private async void UdpServer_SentFrameToPC2bytes(byte[] MessageByte)
+        private async void UdpServer_SentFrameToPC2bytes(byte[] _MessageByte)
         {
-            if (MessageByte.Length >= 64000)
-            {
-              //  System.Windows.MessageBox.Show($"you acceed the length limit of the message \n the length was : {MessageByte.Length}");
-            }
 
-            if (ClientendPoint != null && ContinueSend)
+            var subBuffers = _MessageByte.Chunk(64000);
+            var totalchunks = subBuffers.Count();
+            var count = 0;
+            foreach(var buf in subBuffers)
             {
-              Client?.SendToAsync(MessageByte, ClientendPoint);
+                var MSG = new UDPframeMessage() { totalChunks = totalchunks, ChunkByteArray = buf, CurrentChunkNumber=count};
+                var UDPMSG = getBytesOfUDPMessage(MSG);
+                Client?.SendToAsync(UDPMSG, ClientendPoint);
+                count++;
             }
-
+          
             stopwatch.Stop();
-            if(stopwatch.ElapsedMilliseconds!=0)
+            if (stopwatch.ElapsedMilliseconds != 0)
                 Debug.WriteLine($"{stopwatch.ElapsedMilliseconds} means {1000 / stopwatch.ElapsedMilliseconds} FPS");
             stopwatch.Reset();
-
         }
 
         private static  CanvasDevice _canvasDevice => CanvasDevice.CreateFromDirect3D11Device(FrameCapture.dev);
 
-        private static int _isProcessing = 0;
-
         public static async void _direct3D11CaptureFramePool_FrameArrived(Direct3D11CaptureFramePool sender, object args)
         {
             stopwatch.Start();
-            if (Interlocked.CompareExchange(ref _isProcessing, 1, 0) != 0)
-                return;
-
             try
             {
                 using var frame = sender.TryGetNextFrame();
-               
-              
+
+
                 if (frame != null)
                 {
-                   
-                    var bytes =  FastSurfaceToJpegBytesAsync(frame.Surface);
 
+                    var bytes = LZ4Compression(frame.Surface);
                     SentFrameToPC2bytes?.Invoke(bytes);
 
                 }
             }
-            finally
+            catch(Exception ex)
             {
-                Interlocked.Exchange(ref _isProcessing, 0);
+               System.Windows.MessageBox.Show(ex.Message);
             }
         }
 
-        private static byte[] FastSurfaceToJpegBytesAsync(IDirect3DSurface surface)
+        private static byte[] LZ4Compression(IDirect3DSurface surface)
         {
 
             var _renderTargetBitmap = CanvasRenderTarget.CreateFromDirect3D11Surface(_canvasDevice, surface);
-
+            
+            
             byte[] raw =_renderTargetBitmap.GetPixelBytes();
-
- 
             var compressed = new byte[LZ4Codec.MaximumOutputSize(raw.Length)];
             int size = LZ4Codec.Encode(raw, 0, raw.Length, compressed, 0, compressed.Length,LZ4Level.L00_FAST);
-    
+
+            Array.Resize(ref compressed, size);
+
+           // FrameArrived?.Invoke(compressed, raw.Length);
+ 
             return compressed;
-        }   
+        }
+        public static  byte[] ExtractBytesAsync(MediaStreamSample sample)
+        {
+            
+            var buffer = sample.Buffer;
+
+            byte[] bytes = new byte[buffer.Capacity];
+            using (var reader = Windows.Storage.Streams.DataReader.FromBuffer(buffer))
+            {
+                reader.ReadBytes(bytes);
+            }
+            return bytes;
+
+        }
+        static async Task<byte[]> CompressSurfaceAsync(IDirect3DSurface surface, uint w, uint h)
+        {
+            using var ms = new MemoryStream();
+            using SoftwareBitmap sb = await SoftwareBitmap.CreateCopyFromSurfaceAsync(surface);
+
+            var frame =new SoftwareBitmapFrame(sb);   // class from my earlier message
+            var source = new RawVideoPipeSource(new IVideoFrame[] { frame }) { FrameRate = 30 };
+
+
+            await FFMpegArguments
+                .FromPipeInput(new RawVideoPipeSource(new[] { frame}) { FrameRate = 30 })
+                .OutputToPipe(new StreamPipeSink(ms), o => o
+                    .WithVideoCodec("libx265")
+                    .WithConstantRateFactor(28)
+                    .ForcePixelFormat("yuv420p")
+                    .ForceFormat("hevc"))          // raw Annex B bitstream, pipe-friendly
+                .ProcessAsynchronously();
+
+            byte[] bytes = ms.ToArray();
+            return bytes;
+        }
         #endregion
         #region ConnectionRagion
         UDPMessage MSG = new();

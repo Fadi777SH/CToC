@@ -82,12 +82,12 @@ namespace CToC
         {
             try
             {
+                const int w = 1920, h = 1080;
                 var decompressbyte = new byte[raw];
                 var delta = LZ4Codec.Decode(bytes,0,bytes.Length,decompressbyte,0,decompressbyte.Length);
-               
-                var ImageSource = ConvertToImageSource2(decompressbyte);
+              
                 this.Dispatcher.Invoke(() => {
-                    const int w = 1920, h = 1080;
+                    
 
                     if (_wb == null)
                     {
@@ -106,13 +106,12 @@ namespace CToC
 
 
         }
-        static CanvasDevice  device => CanvasDevice.CreateFromDirect3D11Device(FrameCapture.dev);
-
+ 
         public static BitmapImage ConvertToImageSource(byte[] bytes)
         {
             using (var ms = new MemoryStream(bytes))
             {
-                var rt = CanvasRenderTarget.CreateFromBytes(device,bytes,400,400,Windows.Graphics.DirectX.DirectXPixelFormat.Unknown);
+               
                 ms.Position = 0;
                
                 var bitmapImage = new BitmapImage();

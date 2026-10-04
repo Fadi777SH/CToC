@@ -1,11 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Text;
-using Vortice.Direct3D;
-using Vortice.Direct3D11;
-using Vortice.DXGI;
-using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX.Direct3D11;
 using WinRT;
 
