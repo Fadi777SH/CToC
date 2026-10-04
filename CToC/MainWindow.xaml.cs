@@ -1,18 +1,7 @@
-﻿using CToC.Keyboard;
-using CToC.Mouse;
-using CToC.Screen;
-using CToC.Server;
+﻿using CToC.Server;
 using K4os.Compression.LZ4;
-using K4os.Compression.LZ4.Encoders;
-using Microsoft.Graphics.Canvas;
-using Microsoft.Graphics.Canvas.Brushes;
-using Microsoft.Graphics.Canvas.UI;
-using Microsoft.Graphics.Canvas.UI.Xaml;
-using System.Diagnostics;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Net;
-using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -21,13 +10,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using Windows.Graphics.Capture;
-using Windows.Graphics.DirectX;
-using Windows.Graphics.Imaging;
-using Windows.Storage.Compression;
-using Windows.Storage.Streams;
 using Windows.System;
-using BitmapEncoder = Windows.Graphics.Imaging.BitmapEncoder;
 using Point = System.Windows.Point;
 
 namespace CToC
@@ -37,7 +20,6 @@ namespace CToC
     public  partial class MainWindow :System.Windows.Window
     {
         UdpServer Server = new();
-        private static IntPtr _hookID = IntPtr.Zero;
         public delegate void MouseChangeHandler(System.Windows.Point point);
 
         public static event MouseChangeHandler? MouseChange;
@@ -51,10 +33,6 @@ namespace CToC
         public delegate void MouseWheelHandler(int delta);
         public static event MouseWheelHandler? MouseWheelevent;
         public static event Action? EndClientConnection;
-        private int ScreenWidth = SystemInformation.VirtualScreen.Width;
-        private int ScreenHeight = SystemInformation.VirtualScreen.Height;
-        private int ScreenX = SystemInformation.VirtualScreen.X;
-        private int ScreenY = SystemInformation.VirtualScreen.Y;
 
         private IntPtr Handle;
 
@@ -73,12 +51,20 @@ namespace CToC
             Handle = new WindowInteropHelper(this).Handle;
 
 
-            UdpServer.FrameArrived += TcpServer_DisplayFrame;
+            UdpServer.FrameArrived += DisplayFrame;
             
             
         }
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            Server?.disconnectAccepter();
+            Server?.disconnectClient();
+
+        }
+        #region FrameDisplay
         private WriteableBitmap _wb;
-        private async void TcpServer_DisplayFrame(byte[] bytes)
+       
+        private async void DisplayFrame(byte[] bytes)
         {
             try
             {
@@ -139,15 +125,18 @@ namespace CToC
             return  wb;
 
         }
+
+        #endregion
+
+        #region Ip Adresses
+
         public string _IPAddress
         {
             get
             {
                 return ThisPCIPAddress;
             }
-        } 
-
-
+        }
         private string ThisPCIPAddress { get; set; }
 
         private IPAddress GetIPAddress()
@@ -175,7 +164,8 @@ namespace CToC
             if (this.IPOfWantedDevice.Text.Length > 15)
                 IPOfWantedDevice.Text = IPOfWantedDevice.Text.Substring(0, 4);
         }
-
+        #endregion
+        #region clients
         private void ConnectToRemoteBtn(object sender, RoutedEventArgs e)
         {
             var btn = sender as ToggleButton;
@@ -192,7 +182,7 @@ namespace CToC
                     if (PC1ToPC2.IsChecked == false && (ipofpc1.ToString() != ipofpc2.ToString()))
                     {
                        Server?.Reciever(ipofpc1, ipofpc2);
-                      //uDPServerAsync?.StartRemoteServer();
+                     
                       
                     }
                     else
@@ -268,24 +258,9 @@ namespace CToC
                 btn?.IsChecked = false;
             }
         }
-
-
-
-        private Point GetMousePosInDpi(Point MousePoint)
-        {
-
-
-            //mousepos in DPI
-            PresentationSource source = PresentationSource.FromVisual(this);
-            Matrix transform = source.CompositionTarget.TransformFromDevice;
-            var wpfPoint = transform.Transform(MousePoint);
-            //mousepos in DPI
-
-            return wpfPoint;
-        }
-
-
-
+        #endregion
+  
+        #region keyboard and mouse hooks
         private void PC2Fram_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
         {
 
@@ -301,23 +276,16 @@ namespace CToC
             //the point in the fram 
             var point = this.PC2Fram.PointFromScreen(Mousepos);
 
-            Point ABSpointofthefram = new(0, 0);
+
 
             var Width = this.PC2Fram.ActualWidth;
             var height = this.PC2Fram.ActualHeight;
 
-            var PercentofXfarFromTheABS = ((point.X - ABSpointofthefram.X) / Width) * 100;
-            var PercentofYfarFromTheABS = ((point.Y - ABSpointofthefram.Y) / height) * 100;
+            var PercentofXfarFromTheABS = ((point.X) / Width) * 100;
+            var PercentofYfarFromTheABS = ((point.Y) / height) * 100;
 
             return new(PercentofXfarFromTheABS, PercentofYfarFromTheABS);
         }
-
-        private void Window_Closed(object sender, EventArgs e)
-        {
-            Server.Appclosed();
-
-        }
-
         private void PC2Fram_MouseWheel(object sender, MouseWheelEventArgs e)
         {
             MouseWheelevent?.Invoke(e.Delta);
@@ -379,5 +347,6 @@ namespace CToC
             }
 
         }
+        #endregion
     }
 }

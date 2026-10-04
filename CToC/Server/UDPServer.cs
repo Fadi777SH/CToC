@@ -1,22 +1,14 @@
 ﻿using CToC.Mouse;
 using CToC.Screen;
-using FFMpegCore;
-using FFMpegCore.Pipes;
-using ICSharpCode.NRefactory.CSharp;
 using K4os.Compression.LZ4;
 using Microsoft.Graphics.Canvas;
-using SharpDX.DXGI;
 using System.Diagnostics;
-using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Windows;
 using System.Windows.Input;
 using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX.Direct3D11;
-using Windows.Graphics.Imaging;
 using Windows.Media.Core;
 using WindowsInput;
 using Point = System.Windows.Point;
@@ -56,7 +48,7 @@ namespace CToC.Server
         public async Task Sender(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
             if (Accept?.Connected == true) return;
-            Accept = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            Accept = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp) ;
 
             Accept.Bind(new IPEndPoint(IPAddressOfPC1, PORT));
             
@@ -98,7 +90,7 @@ namespace CToC.Server
 
             new Task(async () =>
             {
-                byte[] Concate = new byte[0];
+                System.Collections.Generic.IEnumerable<byte> Concate = new byte[0];
                 int currentfingerprint = 0;
                 byte[] array=new byte[0];
                 int lastframe = 0;
@@ -120,7 +112,7 @@ namespace CToC.Server
                             {
                                 currentfingerprint = UDPMSG.FrameFingerPrint;
 
-                                Concate = new byte[UDPMSG.TotalSizeOfTheFrame];
+                                Concate = new byte[UDPMSG.ChunkByteArray.Length];
 
                                 concatefirst = false;
                                 lastframe = UDPMSG.CurrentChunkNumber;
@@ -132,9 +124,7 @@ namespace CToC.Server
                                 {
                                     if (UDPMSG.CurrentChunkNumber < UDPMSG.totalChunks)
                                     {
-                                        UDPMSG.ChunkByteArray.CopyTo(Concate);
-                                      //  Concate = Concate.AsQueryable().Concat(UDPMSG.ChunkByteArray);
-                                       // array.AsEnumerable().Add(UDPMSG.ChunkByteArray);
+                                      Concate=  Concate.Concat(UDPMSG.ChunkByteArray);
                                     }
 
                                     //last chunk
@@ -142,14 +132,17 @@ namespace CToC.Server
                                     {
                                         Array.Resize(ref UDPMSG.ChunkByteArray, UDPMSG.ShouldResizeTo);
 
-                                        UDPMSG.ChunkByteArray.CopyTo(Concate);
-                                        //  array.Add(UDPMSG.ChunkByteArray);
-                                        if (UDPMSG.TotalSizeOfTheFrame == Concate.Length)
+                                        Concate = Concate.Concat(UDPMSG.ChunkByteArray);
+                           
+                                        if (UDPMSG.TotalSizeOfTheFrame == Concate.ToArray().Length)
                                         {
-                                            FrameArrived?.Invoke(Concate);
+
+                                            FrameArrived?.Invoke(Concate.ToArray());
                                         }
+                                        
                                         concatefirst = false;
                                     }
+
                                     lastframe = UDPMSG.CurrentChunkNumber;
                                 }
                             }
@@ -269,6 +262,11 @@ namespace CToC.Server
 
                             }
                         }
+                    }
+                    else if (MSG.type == MessageType.Error)
+                    {
+                        System.Windows.MessageBox.Show(MSG.ErrorMessage);
+                        break;
                     }
 
                 }
@@ -435,15 +433,6 @@ namespace CToC.Server
         #endregion
         #region ConnectionRagion
         UDPMessage MSG = new();
-        public void Appclosed()
-        {
-            MSG = new();
-            MSG.ErrorMessage = "Disconnect from the remote computer";
-            MSG.type = MessageType.Error;
-            var B = getBytesOfUDPMessage(MSG);
-            //Client?.SendToAsync(B, ClientendPoint);
-        }
-
         public void disconnectClient()
         {
             if (Client != null)
@@ -458,12 +447,19 @@ namespace CToC.Server
 
             }
         }
-        public void disconnectAccepter()
+        public async Task disconnectAccepter()
         {
             if (Accept != null)
             {
                 ContinueSend = false;
                 ContinueRecive = false;
+
+                MSG = new();
+                MSG.ErrorMessage = "Disconnect from the remote computer";
+                MSG.type = MessageType.Error;
+                var bytes = getBytesOfUDPMessage(MSG);
+                await Accept.SendToAsync(bytes, ClientendPoint);
+
                 Accept.Close();
             }
             MainWindow.KeyPressEvent -= PressThisKey;
