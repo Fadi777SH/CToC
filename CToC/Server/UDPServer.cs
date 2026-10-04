@@ -107,8 +107,8 @@ namespace CToC.Server
                         try
                         {
                             var size = await Accept.ReceiveFromAsync(buf, ClientendPoint);
-                             Array.Resize(ref buf, size.ReceivedBytes);
-                            Debug.WriteLine(size.ReceivedBytes);
+                            Array.Resize(ref buf, size.ReceivedBytes);
+                          
                             var UDPMSG = FromByteArrayToUDPFrameMessage(buf);
 
                             if( UDPMSG.ChunkByteArray.Length!=UDPMSG.ShouldResizeTo)
@@ -122,7 +122,7 @@ namespace CToC.Server
                             {
                                 FrameArrived?.Invoke(Concate.ToArray(), 1920 * 1080 * 4);
                                 
-                                Concate =new byte[64000];
+                                Concate =new byte[65000];
                             }
                             //Array.Resize(ref buf, size.ReceivedBytes);
                             
@@ -339,16 +339,17 @@ namespace CToC.Server
 
             var subBuffers = _MessageByte.Chunk(64000);
             var totalchunks = subBuffers.Count();
-            var count = 0;
+            var count = 1;
             foreach(var buf in subBuffers)
             {
+                count++;
                 var MSG = new UDPframeMessage( totalchunks,count,buf,buf.Length);
 
                 var UDPMSG = getBytesOfUDPMessage(MSG);
                 
 
                 Client?.SendToAsync(UDPMSG, ClientendPoint);
-                count++;
+                
             }
           
             stopwatch.Stop();
@@ -392,8 +393,6 @@ namespace CToC.Server
             int size = LZ4Codec.Encode(raw, 0, raw.Length, compressed, 0, compressed.Length,LZ4Level.L00_FAST);
 
             Array.Resize(ref compressed, size);
-
-           // FrameArrived?.Invoke(compressed, raw.Length);
  
             return compressed;
         }
