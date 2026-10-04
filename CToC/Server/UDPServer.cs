@@ -98,9 +98,11 @@ namespace CToC.Server
 
             new Task(async () =>
             {
-                System.Collections.Generic.IEnumerable<byte> Concate = new byte[0];
+                byte[] Concate = new byte[0];
                 int currentfingerprint = 0;
-
+                byte[] array=new byte[0];
+                int lastframe = 0;
+                bool concatefirst = false;
                 while (ContinueRecive)
                 {
                     var buf = new byte[650000];
@@ -118,26 +120,37 @@ namespace CToC.Server
                             {
                                 currentfingerprint = UDPMSG.FrameFingerPrint;
 
-                                Concate = new byte[65000];
-                                
+                                Concate = new byte[UDPMSG.TotalSizeOfTheFrame];
+
+                                concatefirst = false;
+                                lastframe = UDPMSG.CurrentChunkNumber;
                             }
                             if (currentfingerprint == UDPMSG.FrameFingerPrint)
                             {
-
-                                if (UDPMSG.CurrentChunkNumber < UDPMSG.totalChunks)
+                                if (UDPMSG.CurrentChunkNumber == 1) concatefirst = true;
+                                if (concatefirst==true && lastframe==UDPMSG.CurrentChunkNumber-1)
                                 {
-                                    Concate = Concate.Concat(UDPMSG.ChunkByteArray);
-                                }
+                                    if (UDPMSG.CurrentChunkNumber < UDPMSG.totalChunks)
+                                    {
+                                        UDPMSG.ChunkByteArray.CopyTo(Concate);
+                                      //  Concate = Concate.AsQueryable().Concat(UDPMSG.ChunkByteArray);
+                                       // array.AsEnumerable().Add(UDPMSG.ChunkByteArray);
+                                    }
 
-                                //last chunk
-                                if (UDPMSG.CurrentChunkNumber == UDPMSG.totalChunks)
-                                {
-                                    Array.Resize(ref UDPMSG.ChunkByteArray, UDPMSG.ShouldResizeTo);
+                                    //last chunk
+                                    if (UDPMSG.CurrentChunkNumber == UDPMSG.totalChunks)
+                                    {
+                                        Array.Resize(ref UDPMSG.ChunkByteArray, UDPMSG.ShouldResizeTo);
 
-                                    Concate = Concate.Concat(UDPMSG.ChunkByteArray);
-
-
-                                    FrameArrived?.Invoke(Concate.ToArray());
+                                        UDPMSG.ChunkByteArray.CopyTo(Concate);
+                                        //  array.Add(UDPMSG.ChunkByteArray);
+                                        if (UDPMSG.TotalSizeOfTheFrame == Concate.Length)
+                                        {
+                                            FrameArrived?.Invoke(Concate);
+                                        }
+                                        concatefirst = false;
+                                    }
+                                    lastframe = UDPMSG.CurrentChunkNumber;
                                 }
                             }
 
@@ -268,9 +281,6 @@ namespace CToC.Server
         }
 
 
-
-
-
         #region convertAndMessages
 
 
@@ -354,11 +364,12 @@ namespace CToC.Server
             var totalchunks = subBuffers.Count();
             var count = 0;
             var RandomFingerPrint=random.Next(0,10000);
+            var totalsize = _MessageByte.Length;
             foreach(var buf in subBuffers)
             {
                 count++;
 
-                var MSG = new UDPframeMessage( totalchunks,count,buf,buf.Length,RandomFingerPrint);
+                var MSG = new UDPframeMessage( totalchunks,count,buf,buf.Length,RandomFingerPrint,totalsize);
 
                 var UDPMSG = getBytesOfUDPMessage(MSG);
                 
@@ -405,7 +416,7 @@ namespace CToC.Server
             int size = LZ4Codec.Encode(raw, 0, raw.Length, compressed, 0, compressed.Length,LZ4Level.L00_FAST);
 
             Array.Resize(ref compressed, size);
- 
+            FrameArrived?.Invoke(compressed);
             return compressed;
         }
         public static  byte[] ExtractBytesAsync(MediaStreamSample sample)

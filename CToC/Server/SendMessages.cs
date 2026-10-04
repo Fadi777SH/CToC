@@ -48,13 +48,15 @@ namespace CToC
         public int totalChunks;
         public int FrameFingerPrint;
         public  int CurrentChunkNumber;
+        public int TotalSizeOfTheFrame;
         public int ShouldResizeTo;
 
         [MarshalAs(UnmanagedType.ByValArray,SizeConst =64000)]
         public byte[] ChunkByteArray;
-        public UDPframeMessage(int tot,int current, byte[] framebyte,int resize,int randomfingerprint)
+        public UDPframeMessage(int tot,int current, byte[] framebyte,int resize,int randomfingerprint,int totalsizeoftheframe)
         {
             FrameFingerPrint = randomfingerprint;
+            TotalSizeOfTheFrame = totalsizeoftheframe;
             totalChunks = tot;
             ShouldResizeTo = resize;
             CurrentChunkNumber =current;

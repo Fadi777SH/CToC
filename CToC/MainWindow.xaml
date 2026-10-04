@@ -44,7 +44,7 @@
         <Grid Width="1000" Height="500">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="0.1*"/>
-                <ColumnDefinition Name="PC2Grid" Width="0.70*" Focusable="True"/>
+                <ColumnDefinition Name="PC2Grid" Width="0.8*" Focusable="True"/>
                 <ColumnDefinition Width="0.1*"/>
             </Grid.ColumnDefinitions>
             <Canvas Width="30" Height="30" Name="Canva"/>
@@ -57,7 +57,7 @@
                     MouseWheel="PC2Fram_MouseWheel"
                     Focusable="True"
                     Background="#FF6A1F1F"  >
-                <Image Name="Frames"  />
+                <Image Name="Frames" Width="800" Height="400" />
             </Border>
             
 
