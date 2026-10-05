@@ -117,7 +117,6 @@ namespace CToC.Server
                                 if(UDPMSG.ErrorMessageType==_UDPErrorMessageTypes.ClientExit)
                                 {
                                     System.Windows.MessageBox.Show("there been an exist or a disconnect from the client side ");
-                                    break;
                                 }
                             }
 
@@ -255,6 +254,7 @@ namespace CToC.Server
                             if (MSG.MouseSide == System.Windows.Input.MouseButton.Left)
                             {
                                 inputsime.Mouse.LeftButtonDown();
+                                Debug.WriteLine("down");
                             }
                             if (MSG.MouseSide == System.Windows.Input.MouseButton.Right)
                             {
@@ -271,6 +271,7 @@ namespace CToC.Server
                             if (MSG.MouseSide == System.Windows.Input.MouseButton.Left)
                             {
                                 inputsime.Mouse.LeftButtonUp();
+                                Debug.WriteLine("up");
                             }
                             if (MSG.MouseSide == System.Windows.Input.MouseButton.Right)
                             {

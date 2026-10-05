@@ -36,7 +36,7 @@ namespace CToC
         public delegate void MouseWheelHandler(int delta);
         public static event MouseWheelHandler? MouseWheelevent;
         public static event Action? EndClientConnection;
-
+        private bool _AsSender;
         private IntPtr Handle;
 
    
@@ -194,7 +194,7 @@ namespace CToC
                     if (PC1ToPC2.IsChecked == false && (ipofpc1.ToString() != ipofpc2.ToString()))
                     {
                        Server?.Reciever(ipofpc1, ipofpc2);
-                     
+                        _AsSender = true;
                       
                     }
                     else
@@ -241,6 +241,7 @@ namespace CToC
                     if (PC2ToPC1?.IsChecked == false&&(ipofpc1.ToString() != ipofpc2.ToString()))
                     {
                         Server?.Sender(ipofpc1, ipofpc2);
+                        _AsSender = false;
 
                     }
                     else
@@ -275,9 +276,11 @@ namespace CToC
         #region keyboard and mouse hooks
         private void PC2Fram_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
         {
-
-            Point portionInFram = PortionOfCursorInPC2Fram();
-            MouseChange?.Invoke(portionInFram);
+            if (_AsSender)
+            {
+                Point portionInFram = PortionOfCursorInPC2Fram();
+                MouseChange?.Invoke(portionInFram);
+            }
 
         }
 
@@ -300,18 +303,21 @@ namespace CToC
         }
         private void PC2Fram_MouseWheel(object sender, MouseWheelEventArgs e)
         {
+            if(_AsSender)
             MouseWheelevent?.Invoke(e.Delta);
         }
 
         private void PC2Fram_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            MousePressEvent?.Invoke(e.ChangedButton, e.ButtonState);
+            if (_AsSender)
+                MousePressEvent?.Invoke(e.ChangedButton, e.ButtonState);
 
         }
 
         private void PC2Fram_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            MousePressEvent?.Invoke(e.ChangedButton, e.ButtonState);
+            if (_AsSender)
+                MousePressEvent?.Invoke(e.ChangedButton, e.ButtonState);
 
         }
 
@@ -327,10 +333,11 @@ namespace CToC
                 IPOfWantedDevice.Text = IPOfWantedDevice.Text.Substring(0, 15);
         }
 
-        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+
+        private void Window_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (e.ButtonState == MouseButtonState.Pressed)
-            {   
+            {
                 if (IPofRemote.IsMouseOver)
                 {
                     IPofRemote.Focusable = true;
@@ -348,16 +355,6 @@ namespace CToC
                     IPOfWantedDevice.Focusable = false;
                 }
             }
-        }
-
-
-        private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            if (PC2Fram.IsMouseOver)
-            {
-                KeyPressEvent?.Invoke(e.Key, e.IsDown);
-            }
-
         }
         #endregion
     }

@@ -8,9 +8,9 @@
         mc:Ignorable="d"
         Title="MainWindow" 
         Closed="Window_Closed"
-        ResizeMode="CanMinimize"
-        PreviewKeyDown="Window_PreviewKeyDown"
-        PreviewKeyUp="Window_PreviewKeyDown"
+        
+        ResizeMode="CanResize"
+        MouseDown="Window_MouseDown"
         Width="1200" Height="600" Background="#FF201D1D">
     <Window.Resources>
         <Style TargetType="ToggleButton" x:Key="ToggelBtnStyle">
@@ -55,6 +55,7 @@
                     MouseDown="PC2Fram_MouseDown"
                     MouseUp="PC2Fram_MouseUp"
                     MouseWheel="PC2Fram_MouseWheel"
+                    
                     Focusable="True"
                     Background="#FF6A1F1F"  >
                 <Image Name="Frames" HorizontalAlignment="Center" VerticalAlignment="Center" Width="950" Height="500"  />
