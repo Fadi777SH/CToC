@@ -55,13 +55,20 @@ namespace CToC
 
 
             UdpServer.FrameArrived += DisplayFrame;
-            
+            UdpServer.PC2DisConnect += UdpServer_PC2DisConnect;
             
         }
+
+        private void UdpServer_PC2DisConnect()
+        {
+            System.Windows.MessageBox.Show("one of the two computres should be at least client or a remote");
+
+        }
+
         private void Window_Closed(object sender, EventArgs e)
         {
-        //    Server?.disconnectAccepter();
-        //    Server?.disconnectClient();
+            Server?.disconnectAccepter();
+            Server?.disconnectClient();
 
         }
         #region FrameDisplay
@@ -208,7 +215,7 @@ namespace CToC
                 }
                 else if(btn != null && btn.IsChecked == false)
                 {
-                    Server.disconnectClient();
+                    Server?.disconnectClient();
                     System.Windows.MessageBox.Show("you disconnect as a remote");
                 }
             }
@@ -253,7 +260,7 @@ namespace CToC
                 }
                 else if (btn != null && btn.IsChecked == false)
                 {
-                    Server.disconnectAccepter();
+                    Server?.disconnectAccepter();
                     System.Windows.MessageBox.Show("you disconnect as a remote");
                 }
             }

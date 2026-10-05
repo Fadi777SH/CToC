@@ -14,6 +14,15 @@ namespace CToC
         Error,
         MouseWheelChange
     }
+    public enum _UDPErrorMessageTypes
+    {
+        ClientExit,
+        ApplicationExit,
+        UnKnownProblem,
+        ConnectionProblem,
+        HighResolutionImage,
+    }
+
     public struct UDPMessage
     {
 
@@ -21,7 +30,7 @@ namespace CToC
         public int MouseWheelDelta;
         public Key key;
         public bool IsKeyDown;
-        public string ErrorMessage;
+        public _UDPErrorMessageTypes ErrorMessageType;
         public System.Windows.Input.MouseButton MouseSide;
         public System.Windows.Point Mousepoint;
         public int Width;
@@ -32,6 +41,8 @@ namespace CToC
     };
     public struct UDPframeMessage
     {
+        public MessageType type;
+        public _UDPErrorMessageTypes ErrorMessageType;
         public int totalChunks;
         public int FrameFingerPrint;
         public  int CurrentChunkNumber;
@@ -47,7 +58,7 @@ namespace CToC
         {
 
             FrameHeight = H;
-            FrameHeight = W;
+            FrameWidth = W;
             FrameFingerPrint = randomfingerprint;
             TotalSizeOfTheFrame = totalsizeoftheframe;
             totalChunks = tot;

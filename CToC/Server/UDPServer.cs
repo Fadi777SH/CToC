@@ -2,6 +2,7 @@
 using CToC.Screen;
 using K4os.Compression.LZ4;
 using Microsoft.Graphics.Canvas;
+using Mono.CSharp;
 using SharpDX.DXGI;
 using System.Diagnostics;
 using System.Net;
@@ -82,19 +83,19 @@ namespace CToC.Server
                 {
 
                     System.Windows.MessageBox.Show(ex.Message);
+                    
                     PC2DisConnect?.Invoke();
 
                 }
 
             })
             {
-
             }.Start();
 
             new Task(async () =>
             {
                  System.Collections.Generic.IEnumerable<byte> Concate = new byte[0];
-                //byte[] Concate = new byte[0];
+        
                 int currentfingerprint = 0;
                 byte[] array = new byte[0];
                 int lastframe = 0;
@@ -111,6 +112,14 @@ namespace CToC.Server
                             Array.Resize(ref buf, size.ReceivedBytes);
 
                             var UDPMSG = FromByteArrayToUDPFrameMessage(buf);
+                            if (UDPMSG.type == MessageType.Error)
+                            {
+                                if(UDPMSG.ErrorMessageType==_UDPErrorMessageTypes.ClientExit)
+                                {
+                                    System.Windows.MessageBox.Show("there been an exist or a disconnect from the client side ");
+                                    break;
+                                }
+                            }
 
                             if (currentfingerprint != UDPMSG.FrameFingerPrint)
                             {
@@ -196,6 +205,9 @@ namespace CToC.Server
 
             }).Start();
 
+
+
+
             while (ContinueRecive)
             {
 
@@ -207,7 +219,10 @@ namespace CToC.Server
 
 
                     var size = await Client.ReceiveFromAsync(RecievedByte, ClientendPoint);
-                     Array.Resize(ref RecievedByte, size.ReceivedBytes);
+
+                    
+
+                    Array.Resize(ref RecievedByte, size.ReceivedBytes);
  
                     UDPMessage MSG = FromByteArrayToUDPMessage(RecievedByte);
                     if (MSG.type == MessageType.Keyboard)
@@ -269,9 +284,12 @@ namespace CToC.Server
                     }
                     else if (MSG.type == MessageType.Error)
                     {
-                        System.Windows.MessageBox.Show(MSG.ErrorMessage);
+                        if (MSG.ErrorMessageType == _UDPErrorMessageTypes.ClientExit)
+                        System.Windows.MessageBox.Show("there been an exist or a disconnect from the client side ");
                         break;
                     }
+
+              
 
                 }
                 catch (Exception ex)
@@ -368,12 +386,12 @@ namespace CToC.Server
             var RandomFingerPrint=random.Next(0,1000);
             var totalsize = _MessageByte.Length;
 
-            if(totalchunks<40)
+            if (totalchunks<40)
             foreach(var buf in subBuffers)
             {
                 count++;
 
-                var MSG = new UDPframeMessage( totalchunks,count,buf,buf.Length,RandomFingerPrint,totalsize,W,H);
+                var MSG = new UDPframeMessage(totalchunks, count, buf, buf.Length, RandomFingerPrint, totalsize, W, H) { type=MessageType.Fram};
 
                 var UDPMSG = getBytesOfUDPMessage(MSG);
                 
@@ -444,12 +462,18 @@ namespace CToC.Server
         #endregion
         #region ConnectionRagion
         UDPMessage MSG = new();
-        public void disconnectClient()
+        public async Task disconnectClient()
         {
             if (Client != null)
             {
                 ContinueRecive = false;
                 ContinueSend = false;
+                var MSG = new UDPframeMessage() { ErrorMessageType = _UDPErrorMessageTypes.ClientExit ,type= MessageType.Error};
+
+                var bytes = getBytesOfUDPMessage(MSG);
+
+
+                await Client.SendToAsync(bytes, ClientendPoint);
                 Client.Close();
             }
             if (frameCapture.IsStreaming == true)
@@ -465,9 +489,8 @@ namespace CToC.Server
                 ContinueSend = false;
                 ContinueRecive = false;
 
-                MSG = new();
-                MSG.ErrorMessage = "Disconnect from the remote computer";
-                MSG.type = MessageType.Error;
+                MSG = new UDPMessage() { ErrorMessageType = _UDPErrorMessageTypes.ClientExit, type = MessageType.Error };
+
                 var bytes = getBytesOfUDPMessage(MSG);
                 await Accept.SendToAsync(bytes, ClientendPoint);
 
@@ -490,6 +513,7 @@ namespace CToC.Server
 
             //skip pressing the Lwin and Rwin button
             if (Key.LWin == key || key == Key.RWin) return;
+
             MSG = new();
             MSG.type = MessageType.Keyboard;
             MSG.key = key;
@@ -534,8 +558,6 @@ namespace CToC.Server
             if (Accept != null && ServerShotDown == false)
             {
                 await Accept.SendToAsync(bytes, ClientendPoint);
-
-
             }
         }
         private async void MainWindow_MouseWheelevent(int delta)
@@ -552,8 +574,6 @@ namespace CToC.Server
             if (Accept != null && ServerShotDown == false)
             {
                 await Accept.SendToAsync(bytes, ClientendPoint);
-
-
             }
         }
         #endregion
