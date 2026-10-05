@@ -48,7 +48,7 @@ namespace CToC
             ShouldResizeTo = resize;
             CurrentChunkNumber =current;
             ChunkByteArray = new byte[64000];
-            framebyte.CopyTo(ChunkByteArray);
+            framebyte.CopyTo(ChunkByteArray,0);
             
         }
 

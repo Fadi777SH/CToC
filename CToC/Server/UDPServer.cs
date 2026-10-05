@@ -90,41 +90,45 @@ namespace CToC.Server
 
             new Task(async () =>
             {
-                System.Collections.Generic.IEnumerable<byte> Concate = new byte[0];
+                 System.Collections.Generic.IEnumerable<byte> Concate = new byte[0];
+                //byte[] Concate = new byte[0];
                 int currentfingerprint = 0;
-                byte[] array=new byte[0];
+                byte[] array = new byte[0];
                 int lastframe = 0;
                 bool concatefirst = false;
                 while (ContinueRecive)
                 {
                     var buf = new byte[650000];
-                   
+
                     if (ClientendPoint != null)
                     {
                         try
                         {
                             var size = await Accept.ReceiveFromAsync(buf, ClientendPoint);
                             Array.Resize(ref buf, size.ReceivedBytes);
-                          
+
                             var UDPMSG = FromByteArrayToUDPFrameMessage(buf);
 
                             if (currentfingerprint != UDPMSG.FrameFingerPrint)
                             {
                                 currentfingerprint = UDPMSG.FrameFingerPrint;
-
-                                Concate = new byte[UDPMSG.ChunkByteArray.Length];
+                                
+                                Concate = new byte[0];
+                                Concate = Concate.Concat(UDPMSG.ChunkByteArray);
 
                                 concatefirst = false;
+
                                 lastframe = UDPMSG.CurrentChunkNumber;
+
                             }
                             if (currentfingerprint == UDPMSG.FrameFingerPrint)
                             {
                                 if (UDPMSG.CurrentChunkNumber == 1) concatefirst = true;
-                                if (concatefirst==true && lastframe==UDPMSG.CurrentChunkNumber-1)
+                                if (concatefirst == true && lastframe == UDPMSG.CurrentChunkNumber - 1)
                                 {
                                     if (UDPMSG.CurrentChunkNumber < UDPMSG.totalChunks)
                                     {
-                                      Concate=  Concate.Concat(UDPMSG.ChunkByteArray);
+                                        Concate = Concate.Concat(UDPMSG.ChunkByteArray);
                                     }
 
                                     //last chunk
@@ -133,13 +137,14 @@ namespace CToC.Server
                                         Array.Resize(ref UDPMSG.ChunkByteArray, UDPMSG.ShouldResizeTo);
 
                                         Concate = Concate.Concat(UDPMSG.ChunkByteArray);
-                           
+                                        
+
                                         if (UDPMSG.TotalSizeOfTheFrame == Concate.ToArray().Length)
                                         {
 
                                             FrameArrived?.Invoke(Concate.ToArray());
                                         }
-                                        
+
                                         concatefirst = false;
                                     }
 
@@ -147,15 +152,18 @@ namespace CToC.Server
                                 }
                             }
 
-                           
+
                         }
                         catch (Exception ex)
                         {
-                          System.Windows.MessageBox.Show(ex.Message);
+                            System.Windows.MessageBox.Show(ex.Message);
                         }
                     }
                 }
-            }).Start();
+            })
+            {
+
+            }.Start();
 
 
         }
@@ -170,14 +178,6 @@ namespace CToC.Server
 
             ClientendPoint = new IPEndPoint(IPAddressOfPC2, PORT);
             
-
-
-            //new
-            await Client.ConnectAsync(ClientendPoint);
-
-
-
-
             ContinueSend = true;
             ContinueRecive = true;
 
@@ -361,8 +361,10 @@ namespace CToC.Server
             var subBuffers = _MessageByte.Chunk(_SingleFrameChunk);
             var totalchunks = subBuffers.Count();
             var count = 0;
-            var RandomFingerPrint=random.Next(0,10000);
+            var RandomFingerPrint=random.Next(0,1000);
             var totalsize = _MessageByte.Length;
+
+            if(totalchunks<90)
             foreach(var buf in subBuffers)
             {
                 count++;
@@ -414,7 +416,7 @@ namespace CToC.Server
             int size = LZ4Codec.Encode(raw, 0, raw.Length, compressed, 0, compressed.Length,LZ4Level.L00_FAST);
 
             Array.Resize(ref compressed, size);
-            FrameArrived?.Invoke(compressed);
+
             return compressed;
         }
         public static  byte[] ExtractBytesAsync(MediaStreamSample sample)
@@ -458,7 +460,7 @@ namespace CToC.Server
                 MSG.ErrorMessage = "Disconnect from the remote computer";
                 MSG.type = MessageType.Error;
                 var bytes = getBytesOfUDPMessage(MSG);
-                await Accept.SendToAsync(bytes, ClientendPoint);
+             //   await Accept.SendToAsync(bytes, ClientendPoint);
 
                 Accept.Close();
             }

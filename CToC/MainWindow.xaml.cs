@@ -1,7 +1,10 @@
 ﻿using CToC.Server;
 using K4os.Compression.LZ4;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Runtime.Intrinsics.Arm;
+using System.Security.Cryptography;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -57,8 +60,8 @@ namespace CToC
         }
         private void Window_Closed(object sender, EventArgs e)
         {
-            Server?.disconnectAccepter();
-            Server?.disconnectClient();
+        //    Server?.disconnectAccepter();
+        //    Server?.disconnectClient();
 
         }
         #region FrameDisplay
@@ -68,7 +71,9 @@ namespace CToC
         {
             try
             {
+                var s = SHA256.HashData(bytes);
                 const int w = 1920, h = 1080;
+                Debug.WriteLine(Convert.ToHexString(s));
                 var decompressbyte = new byte[h * w*4];
                 var delta = LZ4Codec.Decode(bytes,0,bytes.Length,decompressbyte,0,decompressbyte.Length);
               
@@ -77,13 +82,15 @@ namespace CToC
 
                     if (_wb == null)
                     {
-                        _wb = new WriteableBitmap(w, h, 96, 96, PixelFormats.Pbgra32, null);
+                        _wb = new WriteableBitmap(w, h, 96, 96, PixelFormats.Bgr32, null);
+                        var tq = _wb.Format;
                         this.Frames.Source = _wb;
                     }
 
                     _wb.WritePixels(new Int32Rect(0, 0, w, h), decompressbyte, w * 4, 0);
+                
 
-            });
+                });
             }
             catch(Exception ex)
             {
@@ -118,7 +125,7 @@ namespace CToC
             int h = 1080;
 
 
-            WriteableBitmap wb = new WriteableBitmap(w, h, 96, 96,PixelFormats.Pbgra32, null);
+            WriteableBitmap wb = new WriteableBitmap(w, h, 96, 96,PixelFormats.Rgb48, null);
 
             wb.WritePixels(new Int32Rect(0, 0, w, h), bytes, w * 4, 0);
            

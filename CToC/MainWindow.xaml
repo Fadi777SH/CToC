@@ -57,7 +57,7 @@
                     MouseWheel="PC2Fram_MouseWheel"
                     Focusable="True"
                     Background="#FF6A1F1F"  >
-                <Image Name="Frames" Width="800" Height="400" />
+                <Image Name="Frames" HorizontalAlignment="Center" VerticalAlignment="Center" Width="950" Height="500"  />
             </Border>
             
 
