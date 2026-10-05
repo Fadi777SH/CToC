@@ -67,14 +67,12 @@ namespace CToC
         #region FrameDisplay
         private WriteableBitmap _wb;
        
-        private async void DisplayFrame(byte[] bytes)
+        private async void DisplayFrame(byte[] bytes,int Width,int Height)
         {
             try
             {
-                var s = SHA256.HashData(bytes);
-                const int w = 1920, h = 1080;
-                Debug.WriteLine(Convert.ToHexString(s));
-                var decompressbyte = new byte[h * w*4];
+
+                var decompressbyte = new byte[Width * Height *4];
                 var delta = LZ4Codec.Decode(bytes,0,bytes.Length,decompressbyte,0,decompressbyte.Length);
               
                 this.Dispatcher.Invoke(() => {
@@ -82,12 +80,12 @@ namespace CToC
 
                     if (_wb == null)
                     {
-                        _wb = new WriteableBitmap(w, h, 96, 96, PixelFormats.Bgr32, null);
-                        var tq = _wb.Format;
+                        _wb = new WriteableBitmap(Width, Height, 96, 96, PixelFormats.Bgr32, null);
+
                         this.Frames.Source = _wb;
                     }
 
-                    _wb.WritePixels(new Int32Rect(0, 0, w, h), decompressbyte, w * 4, 0);
+                    _wb.WritePixels(new Int32Rect(0, 0, Width, Height), decompressbyte, Width * 4, 0);
                 
 
                 });

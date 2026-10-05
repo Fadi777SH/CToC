@@ -40,8 +40,14 @@ namespace CToC
 
         [MarshalAs(UnmanagedType.ByValArray,SizeConst =64000)]
         public byte[] ChunkByteArray;
-        public UDPframeMessage(int tot,int current, byte[] framebyte,int resize,int randomfingerprint,int totalsizeoftheframe)
+        public int FrameWidth;
+        public int FrameHeight;
+        
+        public UDPframeMessage(int tot,int current, byte[] framebyte,int resize,int randomfingerprint,int totalsizeoftheframe, int W, int H)
         {
+
+            FrameHeight = H;
+            FrameHeight = W;
             FrameFingerPrint = randomfingerprint;
             TotalSizeOfTheFrame = totalsizeoftheframe;
             totalChunks = tot;

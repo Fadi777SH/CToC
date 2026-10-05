@@ -2,14 +2,17 @@
 using CToC.Screen;
 using K4os.Compression.LZ4;
 using Microsoft.Graphics.Canvas;
+using SharpDX.DXGI;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
 using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX.Direct3D11;
 using Windows.Media.Core;
+using Windows.Storage.Compression;
 using WindowsInput;
 using Point = System.Windows.Point;
 namespace CToC.Server
@@ -34,9 +37,9 @@ namespace CToC.Server
 
         public delegate void framCapture(byte[] bytes);
         public static event framCapture? SingleFram;
-        public delegate void ShowPic(byte[] bytes);
+        public delegate void ShowPic(byte[] bytes, int W, int H);
         public static event ShowPic? FrameArrived;
-        public delegate void SentFrameToPC2Handlerbit(byte[] bytes);
+        public delegate void SentFrameToPC2Handlerbit(byte[] bytes,int W,int H);
         public static event SentFrameToPC2Handlerbit? SentFrameToPC2bytes;
         public delegate void ProcessDirectSurface(IDirect3DSurface surface);
         public static event ProcessDirectSurface? ProcessDirecSurfaceEvent;
@@ -142,7 +145,7 @@ namespace CToC.Server
                                         if (UDPMSG.TotalSizeOfTheFrame == Concate.ToArray().Length)
                                         {
 
-                                            FrameArrived?.Invoke(Concate.ToArray());
+                                            FrameArrived?.Invoke(Concate.ToArray(),UDPMSG.FrameWidth,UDPMSG.FrameHeight);
                                         }
 
                                         concatefirst = false;
@@ -156,6 +159,7 @@ namespace CToC.Server
                         }
                         catch (Exception ex)
                         {
+                           
                             System.Windows.MessageBox.Show(ex.Message);
                         }
                     }
@@ -355,7 +359,7 @@ namespace CToC.Server
         #region FrameCaptureRegion
 
         Random random = new();
-        private async void UdpServer_SentFrameToPC2bytes(byte[] _MessageByte)
+        private async void UdpServer_SentFrameToPC2bytes(byte[] _MessageByte,int W,int H)
         {
 
             var subBuffers = _MessageByte.Chunk(_SingleFrameChunk);
@@ -364,12 +368,12 @@ namespace CToC.Server
             var RandomFingerPrint=random.Next(0,1000);
             var totalsize = _MessageByte.Length;
 
-            if(totalchunks<90)
+            if(totalchunks<40)
             foreach(var buf in subBuffers)
             {
                 count++;
 
-                var MSG = new UDPframeMessage( totalchunks,count,buf,buf.Length,RandomFingerPrint,totalsize);
+                var MSG = new UDPframeMessage( totalchunks,count,buf,buf.Length,RandomFingerPrint,totalsize,W,H);
 
                 var UDPMSG = getBytesOfUDPMessage(MSG);
                 
@@ -377,6 +381,7 @@ namespace CToC.Server
                 Client?.SendToAsync(UDPMSG, ClientendPoint);
                 
             }
+
           
 
         }
@@ -393,9 +398,10 @@ namespace CToC.Server
 
                 if (frame != null)
                 {
-                    
+                    var W = frame.Surface.Description.Width;
+                    var H = frame.Surface.Description.Height;
                     var bytes = LZ4Compression(frame.Surface);
-                    SentFrameToPC2bytes?.Invoke(bytes);
+                    SentFrameToPC2bytes?.Invoke(bytes, W, H);
 
                 }
             }
@@ -417,6 +423,8 @@ namespace CToC.Server
 
             Array.Resize(ref compressed, size);
 
+
+            
             return compressed;
         }
         public static  byte[] ExtractBytesAsync(MediaStreamSample sample)
@@ -429,6 +437,7 @@ namespace CToC.Server
             {
                 reader.ReadBytes(bytes);
             }
+    
             return bytes;
 
         }
@@ -460,7 +469,7 @@ namespace CToC.Server
                 MSG.ErrorMessage = "Disconnect from the remote computer";
                 MSG.type = MessageType.Error;
                 var bytes = getBytesOfUDPMessage(MSG);
-             //   await Accept.SendToAsync(bytes, ClientendPoint);
+                await Accept.SendToAsync(bytes, ClientendPoint);
 
                 Accept.Close();
             }
@@ -518,7 +527,7 @@ namespace CToC.Server
             MSG.type = MessageType.MouseChange;
             MSG.MouseSide = mouseside;
             MSG.mousestate = state;
-            Debug.WriteLine(MSG.MouseSide + "  " + MSG.mousestate);
+          
             byte[] bytes = getBytesOfUDPMessage(MSG);
 
 
