@@ -63,29 +63,30 @@ namespace SMR.Screen
 
         public void Stream()
         {
-            if (StreamCurrentState == false)
+            
+            
+            StreamCurrentState = true;
+            if (StreamCurrentState == true)
             {
                 try
                 {
                     _captureItem = GraphicsCaptureItem.TryCreateFromDisplayId(displayId);
-                    
+
                     dev = GetDirectdevice();
-                    
+
 
                     _direct3D11CaptureFramePool = Direct3D11CaptureFramePool.CreateFreeThreaded(dev, Format, 1, new(ScreenWidth, ScreenHeight));
-                    
+
 
                     _direct3D11CaptureFramePool.FrameArrived += UdpServer._direct3D11CaptureFramePool_FrameArrived;
                     _graphicsCaptureSession = _direct3D11CaptureFramePool.CreateCaptureSession(_captureItem);
                     _graphicsCaptureSession.StartCapture();
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     MessageBox.Show(ex.Message);
                 }
             }
-            StreamCurrentState = true;
-
 
         }
 

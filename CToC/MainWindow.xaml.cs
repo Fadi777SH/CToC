@@ -46,7 +46,7 @@ namespace SMR
 
             InitializeComponent();
             DataContext = this;
-            
+
 
             this.ThisPCIPAddress = GetIPAddress().ToString();
 

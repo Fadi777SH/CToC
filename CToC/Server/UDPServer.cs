@@ -15,6 +15,7 @@ using Windows.Graphics.DirectX.Direct3D11;
 using Windows.Media.Core;
 using Windows.Storage.Compression;
 using WindowsInput;
+
 using Point = System.Windows.Point;
 namespace SMR.Server
 {
@@ -44,11 +45,17 @@ namespace SMR.Server
         public static event SentFrameToPC2Handlerbit? SentFrameToPC2bytes;
         public delegate void ProcessDirectSurface(IDirect3DSurface surface);
         public static event ProcessDirectSurface? ProcessDirecSurfaceEvent;
+        public delegate void ProcessRecieve(bool KeepRecieve);
+        public static event ProcessRecieve? KeepRecieveFromUser;
+       
+        public static event ProcessRecieve? KeepReciveFromRemote;
         public FrameCapture frameCapture = new();
         #endregion
         private bool ContinueSend = true;
         private bool ContinueRecive = true;
         private const int _SingleFrameChunk = 64000;
+
+        private Thread? StartControlOfRemote;
         public async Task Sender(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
             if (Accept?.Connected == true) return;
@@ -64,40 +71,152 @@ namespace SMR.Server
 
             //new
             await Accept.ConnectAsync(ClientendPoint);
+            
 
-            new Thread(async delegate ()
+            StartSendHooks();
+
+            KeepReciveFromRemote?.Invoke(ContinueRecive);
+
+
+            KeepReciveFromRemote += StartReciveFromRemote;
+            
+
+        }
+
+        private async  void StartSendHooks()
+        {
+            try
             {
-                try
+                if (ContinueSend)
                 {
-                    if (ContinueSend)
-                    {
-                        MainWindow.KeyPressEvent += PressThisKey;
-                        MainWindow.MouseChange += MouseChangepos;
-                        MainWindow.MousePressEvent += MousePressedDown;
-                        MainWindow.MouseWheelevent += MainWindow_MouseWheelevent;
+                    MainWindow.KeyPressEvent += PressThisKey;
+                    MainWindow.MouseChange += MouseChangepos;
+                    MainWindow.MousePressEvent += MousePressedDown;
+                    MainWindow.MouseWheelevent += MainWindow_MouseWheelevent;
 
+                }
+
+            }
+            catch (Exception ex)
+            {
+
+                System.Windows.MessageBox.Show(ex.Message);
+
+                PC2DisConnect?.Invoke();
+
+            }
+        }
+
+        private async void StartRecieveFromHooksUser(bool State)
+        {
+            inputsime = new();
+            if(ContinueRecive)
+            new Task(async () => {
+
+                while (ContinueRecive)
+                {
+
+
+
+                    byte[] RecievedByte = new byte[255];
+                    try
+                    {
+
+
+                        var size = await Client.ReceiveFromAsync(RecievedByte, ClientendPoint);
+
+
+
+                        Array.Resize(ref RecievedByte, size.ReceivedBytes);
+
+                        UDPMessage MSG = FromByteArrayToUDPMessage(RecievedByte);
+                        if (MSG.type == MessageType.Keyboard)
+                        {
+                            int vk = KeyInterop.VirtualKeyFromKey(MSG.key);
+                            var key = (WindowsInput.Native.VirtualKeyCode)vk;
+                            if (MSG.IsKeyDown)
+                                inputsime.Keyboard.KeyDown(key);
+                            else
+                                inputsime.Keyboard.KeyUp(key);
+                        }
+
+
+                        else if (MSG.type == MessageType.MouseWheelChange)
+                        {
+                            inputsime.Mouse.VerticalScroll(MSG.MouseWheelDelta);
+                        }
+
+
+                        else if (MSG.type == MessageType.Mousepoint)
+                        {
+                            var P = GetPC2MousePos(MSG.Mousepoint);
+                            MousePosition.SetCursorPos((int)P.X, (int)P.Y);
+                        }
+
+                        else if (MSG.type == MessageType.MouseChange)
+                        {
+                            if (MSG.mousestate == MouseButtonState.Pressed)
+                            {
+                                if (MSG.MouseSide == System.Windows.Input.MouseButton.Left)
+                                {
+                                    inputsime.Mouse.LeftButtonDown();
+
+                                }
+                                if (MSG.MouseSide == System.Windows.Input.MouseButton.Right)
+                                {
+                                    inputsime.Mouse.RightButtonDown();
+                                }
+                                if (MSG.MouseSide == System.Windows.Input.MouseButton.Middle)
+                                {
+
+                                }
+                            }
+
+                            else if (MSG.mousestate == MouseButtonState.Released)
+                            {
+                                if (MSG.MouseSide == System.Windows.Input.MouseButton.Left)
+                                {
+                                    inputsime.Mouse.LeftButtonUp();
+
+                                }
+                                if (MSG.MouseSide == System.Windows.Input.MouseButton.Right)
+                                {
+                                    inputsime.Mouse.RightButtonUp();
+                                }
+                                if (MSG.MouseSide == System.Windows.Input.MouseButton.Middle)
+                                {
+
+                                }
+                            }
+                        }
+                        else if (MSG.type == MessageType.Error)
+                        {
+                            if (MSG.ErrorMessageType == _UDPErrorMessageTypes.ClientExit)
+                                System.Windows.MessageBox.Show("there been an exist or a disconnect from the client side ");
+                            break;
+                        }
+
+
+
+                    }
+                    catch (Exception ex)
+                    {
+
+                        System.Windows.MessageBox.Show(ex.Message);
                     }
 
                 }
-                catch(Exception ex)
-                {
-
-                    System.Windows.MessageBox.Show(ex.Message);
-                    
-                    PC2DisConnect?.Invoke();
-
-                }
-
-            })
-            {
-            }.Start();
-
+            }).Start();
+        }
+        private async void StartReciveFromRemote(bool state)
+        {
+            if(state==true)
             new Task(async () =>
             {
-                 System.Collections.Generic.IEnumerable<byte> Concate = new byte[0];
-        
+                System.Collections.Generic.IEnumerable<byte> Concate = new byte[0];
+
                 int currentfingerprint = 0;
-                byte[] array = new byte[0];
+
                 int lastframe = 0;
                 bool concatefirst = false;
                 while (ContinueRecive)
@@ -114,7 +233,7 @@ namespace SMR.Server
                             var UDPMSG = FromByteArrayToUDPFrameMessage(buf);
                             if (UDPMSG.type == MessageType.Error)
                             {
-                                if(UDPMSG.ErrorMessageType==_UDPErrorMessageTypes.ClientExit)
+                                if (UDPMSG.ErrorMessageType == _UDPErrorMessageTypes.ClientExit)
                                 {
                                     System.Windows.MessageBox.Show("there been an exist or a disconnect from the client side ");
                                 }
@@ -123,7 +242,7 @@ namespace SMR.Server
                             if (currentfingerprint != UDPMSG.FrameFingerPrint)
                             {
                                 currentfingerprint = UDPMSG.FrameFingerPrint;
-                                
+
                                 Concate = new byte[0];
                                 Concate = Concate.Concat(UDPMSG.ChunkByteArray);
 
@@ -148,12 +267,12 @@ namespace SMR.Server
                                         Array.Resize(ref UDPMSG.ChunkByteArray, UDPMSG.ShouldResizeTo);
 
                                         Concate = Concate.Concat(UDPMSG.ChunkByteArray);
-                                        
+
 
                                         if (UDPMSG.TotalSizeOfTheFrame == Concate.ToArray().Length)
                                         {
 
-                                            FrameArrived?.Invoke(Concate.ToArray(),UDPMSG.FrameWidth,UDPMSG.FrameHeight);
+                                            FrameArrived?.Invoke(Concate.ToArray(), UDPMSG.FrameWidth, UDPMSG.FrameHeight);
                                         }
 
                                         concatefirst = false;
@@ -167,7 +286,7 @@ namespace SMR.Server
                         }
                         catch (Exception ex)
                         {
-                           
+
                             System.Windows.MessageBox.Show(ex.Message);
                         }
                     }
@@ -176,129 +295,29 @@ namespace SMR.Server
             {
 
             }.Start();
-
-
         }
-
-
+        
         public async Task Reciever(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
-            inputsime = new();
-            Client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp) ;
+            
+            Client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
             Client.Bind(new IPEndPoint(IPAddressOfPC1, PORT));
 
             ClientendPoint = new IPEndPoint(IPAddressOfPC2, PORT);
-            
+
             ContinueSend = true;
             ContinueRecive = true;
 
             frameCapture.Stream();
 
-            new Thread(() =>
+            if (ContinueSend)
             {
-                if (ContinueSend)
-                {
-                    SentFrameToPC2bytes += UdpServer_SentFrameToPC2bytes;
-                }
-
-            }).Start();
-
-
-
-
-            while (ContinueRecive)
-            {
-
-
-
-                byte[] RecievedByte = new byte[255];
-                try
-                {
-
-
-                    var size = await Client.ReceiveFromAsync(RecievedByte, ClientendPoint);
-
-                    
-
-                    Array.Resize(ref RecievedByte, size.ReceivedBytes);
- 
-                    UDPMessage MSG = FromByteArrayToUDPMessage(RecievedByte);
-                    if (MSG.type == MessageType.Keyboard)
-                    {
-                        int vk = KeyInterop.VirtualKeyFromKey(MSG.key);
-                        var key = (WindowsInput.Native.VirtualKeyCode)vk;
-                        if (MSG.IsKeyDown)
-                            inputsime.Keyboard.KeyDown(key);
-                        else
-                            inputsime.Keyboard.KeyUp(key);
-                    }
-
-
-                    else if (MSG.type == MessageType.MouseWheelChange)
-                    {
-                        inputsime.Mouse.VerticalScroll(MSG.MouseWheelDelta);
-                    }
-
-
-                    else if (MSG.type == MessageType.Mousepoint)
-                    {
-                        var P = GetPC2MousePos(MSG.Mousepoint);
-                        MousePosition.SetCursorPos((int)P.X, (int)P.Y);
-                    }
-
-                    else if (MSG.type == MessageType.MouseChange)
-                    {
-                        if (MSG.mousestate == MouseButtonState.Pressed)
-                        {
-                            if (MSG.MouseSide == System.Windows.Input.MouseButton.Left)
-                            {
-                                inputsime.Mouse.LeftButtonDown();
-                              
-                            }
-                            if (MSG.MouseSide == System.Windows.Input.MouseButton.Right)
-                            {
-                                inputsime.Mouse.RightButtonDown();
-                            }
-                            if (MSG.MouseSide == System.Windows.Input.MouseButton.Middle)
-                            {
-
-                            }
-                        }
-
-                        else if (MSG.mousestate == MouseButtonState.Released)
-                        {
-                            if (MSG.MouseSide == System.Windows.Input.MouseButton.Left)
-                            {
-                                inputsime.Mouse.LeftButtonUp();
-              
-                            }
-                            if (MSG.MouseSide == System.Windows.Input.MouseButton.Right)
-                            {
-                                inputsime.Mouse.RightButtonUp();
-                            }
-                            if (MSG.MouseSide == System.Windows.Input.MouseButton.Middle)
-                            {
-
-                            }
-                        }
-                    }
-                    else if (MSG.type == MessageType.Error)
-                    {
-                        if (MSG.ErrorMessageType == _UDPErrorMessageTypes.ClientExit)
-                        System.Windows.MessageBox.Show("there been an exist or a disconnect from the client side ");
-                        break;
-                    }
-
-              
-
-                }
-                catch (Exception ex)
-                {
-                    System.Windows.MessageBox.Show(ex.Message);
-                }
-
+                SentFrameToPC2bytes += UdpServer_SentFrameToPC2bytes;
             }
+
+            KeepRecieveFromUser?.Invoke(ContinueRecive);
+            KeepRecieveFromUser += StartRecieveFromHooksUser;
         }
 
 
@@ -386,9 +405,7 @@ namespace SMR.Server
             var count = 0;
             var RandomFingerPrint=random.Next(0,1000);
             var totalsize = _MessageByte.Length;
-
-            if (totalchunks<40)
-            foreach(var buf in subBuffers)
+           foreach(var buf in subBuffers)
             {
                 count++;
 
@@ -413,7 +430,6 @@ namespace SMR.Server
             try
             {
                 using var frame = sender.TryGetNextFrame();
-
 
                 if (frame != null)
                 {
@@ -446,26 +462,18 @@ namespace SMR.Server
             
             return compressed;
         }
-        public static  byte[] ExtractBytesAsync(MediaStreamSample sample)
-        {
-            
-            var buffer = sample.Buffer;
 
-            byte[] bytes = new byte[buffer.Capacity];
-            using (var reader = Windows.Storage.Streams.DataReader.FromBuffer(buffer))
-            {
-                reader.ReadBytes(bytes);
-            }
-    
-            return bytes;
-
-        }
         #endregion
         #region ConnectionRagion
         UDPMessage MSG = new();
         public async Task disconnectClient()
         {
-            if (Client != null)
+            if (frameCapture.IsStreaming == true&&ContinueSend==true)
+            {
+                frameCapture.EndStream();
+
+            }
+            if (Client != null&& frameCapture.IsStreaming == false)
             {
                 ContinueRecive = false;
                 ContinueSend = false;
@@ -475,13 +483,11 @@ namespace SMR.Server
 
 
                 await Client.SendToAsync(bytes, ClientendPoint);
+                SentFrameToPC2bytes -= UdpServer_SentFrameToPC2bytes;
+                KeepRecieveFromUser -= StartRecieveFromHooksUser;
                 Client.Close();
             }
-            if (frameCapture.IsStreaming == true)
-            {
-                frameCapture.EndStream();
 
-            }
         }
         public async Task disconnectAccepter()
         {
@@ -494,7 +500,7 @@ namespace SMR.Server
 
                 var bytes = getBytesOfUDPMessage(MSG);
                 await Accept.SendToAsync(bytes, ClientendPoint);
-
+                KeepReciveFromRemote -= StartReciveFromRemote;
                 Accept.Close();
             }
             MainWindow.KeyPressEvent -= PressThisKey;
