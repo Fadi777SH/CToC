@@ -8,7 +8,8 @@
         mc:Ignorable="d"
         Title="SuperMassiveRemote" 
         Closed="Window_Closed"
-        
+        PreviewKeyDown="Window_PreviewKeyDown"
+        PreviewKeyUp="Window_PreviewKeyDown"
         ResizeMode="CanResize"
         MouseDown="Window_MouseDown"
         Width="1200" Height="600" Background="#FF201D1D">
@@ -41,7 +42,7 @@
     </Window.Resources>
 
     <Grid>
-        <Grid Width="1200" Height="500">
+        <Grid Height="500" Margin="0,42,0,42">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="0.1*"/>
                 <ColumnDefinition Name="PC2Grid" Width="0.8*" Focusable="True"/>
@@ -57,10 +58,10 @@
                     MouseWheel="PC2Fram_MouseWheel"
                     
                     Focusable="True"
-                    Background="#FF6A1F1F"  >
+                    Background="#FF430505"  >
                 <Image Name="Frames" HorizontalAlignment="Center" VerticalAlignment="Center" Width="950" Height="500"  />
             </Border>
-            
+
 
             <ToggleButton Focusable="False"  Grid.Column="2" Name="PC2ToPC1" Style="{StaticResource ToggelBtnStyle}" Click="ConnectToRemoteBtn"/>
             <ToggleButton Focusable="False"  Grid.Column="0" Name="PC1ToPC2" Style="{StaticResource ToggelBtnStyle}" Click="ConnectToWantedDeviceBtn"/>
@@ -75,7 +76,7 @@
 
             <TextBox   Grid.Column="2" Name="IPofRemote" Height="20" Width="100" Margin="0,25,0,140" HorizontalAlignment="Center" Text="192.168.100.74" FontFamily="Ebrima" TextChanged="IPofRemote_TextChanged" />
             <TextBox   Grid.Column="0" Name="IPOfWantedDevice" Height="20" Width="100"   Margin="0,25,0,140" HorizontalAlignment="Center" Text="192.168.100.74" FontFamily="Ebrima" TextChanged="IPOfWantedDevice_TextChanged"  />
-            
+
             <TextBlock Foreground="White" Focusable="False" 
                        VerticalAlignment="Top"
                        HorizontalAlignment="Center"

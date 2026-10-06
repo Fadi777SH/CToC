@@ -35,12 +35,7 @@ namespace SMR
         public static event MousePressHandler? MousePressEvent;
         public delegate void MouseWheelHandler(int delta);
         public static event MouseWheelHandler? MouseWheelevent;
-        public static event Action? EndClientConnection;
-        private bool _AsSender;
-        private IntPtr Handle;
 
-   
-        public static event Action? EndServerConnection;
         public MainWindow()
         {
 
@@ -50,8 +45,6 @@ namespace SMR
 
             this.ThisPCIPAddress = GetIPAddress().ToString();
 
-
-            Handle = new WindowInteropHelper(this).Handle;
 
 
             UdpServer.FrameArrived += DisplayFrame;
@@ -194,7 +187,7 @@ namespace SMR
                     if (PC1ToPC2.IsChecked == false && (ipofpc1.ToString() != ipofpc2.ToString()))
                     {
                        Server?.Reciever(ipofpc1, ipofpc2);
-                        _AsSender = true;
+   
                       
                     }
                     else
@@ -207,11 +200,7 @@ namespace SMR
                         {
                             System.Windows.MessageBox.Show("you can't be a reciver and a remote at the same time");
                         }
-
-
-                        
                         btn.IsChecked = false;
-                        _AsSender = false;
                     }
                 }
                 else if(btn != null && btn.IsChecked == false)
@@ -242,8 +231,7 @@ namespace SMR
                     if (PC2ToPC1?.IsChecked == false&&(ipofpc1.ToString() != ipofpc2.ToString()))
                     {
                         Server?.Sender(ipofpc1, ipofpc2);
-                        _AsSender = false;
-
+                      
                     }
                     else
                     {
@@ -305,25 +293,21 @@ namespace SMR
         {
 
             MouseWheelevent?.Invoke(e.Delta);
+
         }
 
         private void PC2Fram_MouseUp(object sender, MouseButtonEventArgs e)
         {
 
-                MousePressEvent?.Invoke(e.ChangedButton, e.ButtonState);
+            MousePressEvent?.Invoke(e.ChangedButton, e.ButtonState);
 
         }
 
         private void PC2Fram_MouseDown(object sender, MouseButtonEventArgs e)
         {
 
-                MousePressEvent?.Invoke(e.ChangedButton, e.ButtonState);
+            MousePressEvent?.Invoke(e.ChangedButton, e.ButtonState);
             var r = e.ClickCount;
-            if (r ==0)
-            {
-
-            }
-
 
         }
 
@@ -362,6 +346,12 @@ namespace SMR
                 }
             }
         }
+        private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            KeyPressEvent?.Invoke(e.Key, e.IsDown);
+        }
         #endregion
+
+
     }
 }

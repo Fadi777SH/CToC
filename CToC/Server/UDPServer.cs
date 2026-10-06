@@ -37,14 +37,13 @@ namespace SMR.Server
         EndPoint PcEndPoint;
         EndPoint ClientendPoint;
 
-        public delegate void framCapture(byte[] bytes);
-        public static event framCapture? SingleFram;
+    
+
         public delegate void ShowPic(byte[] bytes, int W, int H);
         public static event ShowPic? FrameArrived;
         public delegate void SentFrameToPC2Handlerbit(byte[] bytes,int W,int H);
         public static event SentFrameToPC2Handlerbit? SentFrameToPC2bytes;
-        public delegate void ProcessDirectSurface(IDirect3DSurface surface);
-        public static event ProcessDirectSurface? ProcessDirecSurfaceEvent;
+
         public delegate void ProcessRecieve(bool KeepRecieve);
         public static event ProcessRecieve? KeepRecieveFromUser;
        
@@ -55,7 +54,7 @@ namespace SMR.Server
         private bool ContinueRecive = true;
         private const int _SingleFrameChunk = 64000;
 
-        private Thread? StartControlOfRemote;
+    
         public async Task Sender(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
             if (Accept?.Connected == true) return;
@@ -116,7 +115,7 @@ namespace SMR.Server
         private  void StartRecieveFromHooksUser(bool State)
         {
             inputsime = new();
-           // if (ContinueRecive)
+            if (ContinueRecive&&Client!=null)
             
                 new Task(async () =>
                 {
@@ -219,7 +218,7 @@ namespace SMR.Server
         }
         private async void StartReciveFromRemote(bool state)
         {
-            //if(state==true)
+            if(state==true&&Accept!=null)
             new Task(async () =>
             {
                 System.Collections.Generic.IEnumerable<byte> Concate = new byte[0];
@@ -368,7 +367,6 @@ namespace SMR.Server
                 ptr = Marshal.AllocHGlobal(size);
 
                 Marshal.Copy(arr, 0, ptr, size);
-
                 str = (UDPMessage)Marshal.PtrToStructure(ptr, str.GetType());
             }
             finally

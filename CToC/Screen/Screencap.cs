@@ -23,7 +23,7 @@ namespace SMR.Screen
 
         public   Direct3D11CaptureFramePool _direct3D11CaptureFramePool;
         public delegate void FramArrivedHandler(Direct3D11CaptureFramePool Framepool, GraphicsCaptureSession graphics);
-        public static event FramArrivedHandler? FrameArrived;
+
         public bool IsStreaming
         {
             get
