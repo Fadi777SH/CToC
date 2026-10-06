@@ -277,11 +277,10 @@ namespace SMR
         #region keyboard and mouse hooks
         private void PC2Fram_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
         {
-            if (_AsSender)
-            {
+
                 Point portionInFram = PortionOfCursorInPC2Fram();
                 MouseChange?.Invoke(portionInFram);
-            }
+            
 
         }
 
@@ -304,20 +303,20 @@ namespace SMR
         }
         private void PC2Fram_MouseWheel(object sender, MouseWheelEventArgs e)
         {
-            if(_AsSender)
+
             MouseWheelevent?.Invoke(e.Delta);
         }
 
         private void PC2Fram_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            if (_AsSender)
+
                 MousePressEvent?.Invoke(e.ChangedButton, e.ButtonState);
 
         }
 
         private void PC2Fram_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (_AsSender)
+
                 MousePressEvent?.Invoke(e.ChangedButton, e.ButtonState);
             var r = e.ClickCount;
             if (r ==0)

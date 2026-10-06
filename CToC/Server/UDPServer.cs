@@ -71,146 +71,155 @@ namespace SMR.Server
 
             //new
             await Accept.ConnectAsync(ClientendPoint);
-            
+
+
+
+
 
             StartSendHooks();
 
-            KeepReciveFromRemote?.Invoke(ContinueRecive);
+           
 
 
             KeepReciveFromRemote += StartReciveFromRemote;
-            
 
+            KeepReciveFromRemote?.Invoke(ContinueRecive);
         }
 
-        private async  void StartSendHooks()
+        private async void StartSendHooks()
         {
-            try
+            new Thread(async delegate ()
             {
-                if (ContinueSend)
+                try
                 {
-                    MainWindow.KeyPressEvent += PressThisKey;
-                    MainWindow.MouseChange += MouseChangepos;
-                    MainWindow.MousePressEvent += MousePressedDown;
-                    MainWindow.MouseWheelevent += MainWindow_MouseWheelevent;
+                    if (ContinueSend)
+                    {
+                        MainWindow.KeyPressEvent += PressThisKey;
+                        MainWindow.MouseChange += MouseChangepos;
+                        MainWindow.MousePressEvent += MousePressedDown;
+                        MainWindow.MouseWheelevent += MainWindow_MouseWheelevent;
+
+                    }
 
                 }
-
-            }
-            catch (Exception ex)
-            {
-
-                System.Windows.MessageBox.Show(ex.Message);
-
-                PC2DisConnect?.Invoke();
-
-            }
-        }
-
-        private async void StartRecieveFromHooksUser(bool State)
-        {
-            inputsime = new();
-            if(ContinueRecive)
-            new Task(async () => {
-
-                while (ContinueRecive)
+                catch (Exception ex)
                 {
 
+                    System.Windows.MessageBox.Show(ex.Message);
 
-
-                    byte[] RecievedByte = new byte[255];
-                    try
-                    {
-
-
-                        var size = await Client.ReceiveFromAsync(RecievedByte, ClientendPoint);
-
-
-
-                        Array.Resize(ref RecievedByte, size.ReceivedBytes);
-
-                        UDPMessage MSG = FromByteArrayToUDPMessage(RecievedByte);
-                        if (MSG.type == MessageType.Keyboard)
-                        {
-                            int vk = KeyInterop.VirtualKeyFromKey(MSG.key);
-                            var key = (WindowsInput.Native.VirtualKeyCode)vk;
-                            if (MSG.IsKeyDown)
-                                inputsime.Keyboard.KeyDown(key);
-                            else
-                                inputsime.Keyboard.KeyUp(key);
-                        }
-
-
-                        else if (MSG.type == MessageType.MouseWheelChange)
-                        {
-                            inputsime.Mouse.VerticalScroll(MSG.MouseWheelDelta);
-                        }
-
-
-                        else if (MSG.type == MessageType.Mousepoint)
-                        {
-                            var P = GetPC2MousePos(MSG.Mousepoint);
-                            MousePosition.SetCursorPos((int)P.X, (int)P.Y);
-                        }
-
-                        else if (MSG.type == MessageType.MouseChange)
-                        {
-                            if (MSG.mousestate == MouseButtonState.Pressed)
-                            {
-                                if (MSG.MouseSide == System.Windows.Input.MouseButton.Left)
-                                {
-                                    inputsime.Mouse.LeftButtonDown();
-
-                                }
-                                if (MSG.MouseSide == System.Windows.Input.MouseButton.Right)
-                                {
-                                    inputsime.Mouse.RightButtonDown();
-                                }
-                                if (MSG.MouseSide == System.Windows.Input.MouseButton.Middle)
-                                {
-
-                                }
-                            }
-
-                            else if (MSG.mousestate == MouseButtonState.Released)
-                            {
-                                if (MSG.MouseSide == System.Windows.Input.MouseButton.Left)
-                                {
-                                    inputsime.Mouse.LeftButtonUp();
-
-                                }
-                                if (MSG.MouseSide == System.Windows.Input.MouseButton.Right)
-                                {
-                                    inputsime.Mouse.RightButtonUp();
-                                }
-                                if (MSG.MouseSide == System.Windows.Input.MouseButton.Middle)
-                                {
-
-                                }
-                            }
-                        }
-                        else if (MSG.type == MessageType.Error)
-                        {
-                            if (MSG.ErrorMessageType == _UDPErrorMessageTypes.ClientExit)
-                                System.Windows.MessageBox.Show("there been an exist or a disconnect from the client side ");
-                            break;
-                        }
-
-
-
-                    }
-                    catch (Exception ex)
-                    {
-
-                        System.Windows.MessageBox.Show(ex.Message);
-                    }
+                    PC2DisConnect?.Invoke();
 
                 }
             }).Start();
         }
+
+        private  void StartRecieveFromHooksUser(bool State)
+        {
+            inputsime = new();
+           // if (ContinueRecive)
+            
+                new Task(async () =>
+                {
+
+                    while (ContinueRecive)
+                    {
+
+
+
+                        byte[] RecievedByte = new byte[255];
+                        try
+                        {
+
+
+                            var size = await Client.ReceiveFromAsync(RecievedByte, ClientendPoint);
+
+
+
+                            Array.Resize(ref RecievedByte, size.ReceivedBytes);
+
+                            UDPMessage MSG = FromByteArrayToUDPMessage(RecievedByte);
+                            if (MSG.type == MessageType.Keyboard)
+                            {
+                                int vk = KeyInterop.VirtualKeyFromKey(MSG.key);
+                                var key = (WindowsInput.Native.VirtualKeyCode)vk;
+                                if (MSG.IsKeyDown)
+                                    inputsime.Keyboard.KeyDown(key);
+                                else
+                                    inputsime.Keyboard.KeyUp(key);
+                            }
+
+
+                            else if (MSG.type == MessageType.MouseWheelChange)
+                            {
+                                inputsime.Mouse.VerticalScroll(MSG.MouseWheelDelta);
+                            }
+
+
+                            else if (MSG.type == MessageType.Mousepoint)
+                            {
+                                var P = GetPC2MousePos(MSG.Mousepoint);
+                                MousePosition.SetCursorPos((int)P.X, (int)P.Y);
+                            }
+
+                            else if (MSG.type == MessageType.MouseChange)
+                            {
+                                if (MSG.mousestate == MouseButtonState.Pressed)
+                                {
+                                    if (MSG.MouseSide == System.Windows.Input.MouseButton.Left)
+                                    {
+                                        inputsime.Mouse.LeftButtonDown();
+
+                                    }
+                                    if (MSG.MouseSide == System.Windows.Input.MouseButton.Right)
+                                    {
+                                        inputsime.Mouse.RightButtonDown();
+                                    }
+                                    if (MSG.MouseSide == System.Windows.Input.MouseButton.Middle)
+                                    {
+
+                                    }
+                                }
+
+                                else if (MSG.mousestate == MouseButtonState.Released)
+                                {
+                                    if (MSG.MouseSide == System.Windows.Input.MouseButton.Left)
+                                    {
+                                        inputsime.Mouse.LeftButtonUp();
+
+                                    }
+                                    if (MSG.MouseSide == System.Windows.Input.MouseButton.Right)
+                                    {
+                                        inputsime.Mouse.RightButtonUp();
+                                    }
+                                    if (MSG.MouseSide == System.Windows.Input.MouseButton.Middle)
+                                    {
+
+                                    }
+                                }
+                            }
+                            else if (MSG.type == MessageType.Error)
+                            {
+                                if (MSG.ErrorMessageType == _UDPErrorMessageTypes.ClientExit)
+                                    System.Windows.MessageBox.Show("there been an exist or a disconnect from the client side ");
+                                break;
+                            }
+
+
+
+                        }
+                        catch (Exception ex)
+                        {
+
+                            System.Windows.MessageBox.Show(ex.Message);
+                        }
+
+                    }
+                }).Start();
+            
+        }
         private async void StartReciveFromRemote(bool state)
         {
-            if(state==true)
+            //if(state==true)
             new Task(async () =>
             {
                 System.Collections.Generic.IEnumerable<byte> Concate = new byte[0];
@@ -316,8 +325,10 @@ namespace SMR.Server
                 SentFrameToPC2bytes += UdpServer_SentFrameToPC2bytes;
             }
 
-            KeepRecieveFromUser?.Invoke(ContinueRecive);
+           
             KeepRecieveFromUser += StartRecieveFromHooksUser;
+
+            KeepRecieveFromUser?.Invoke(ContinueRecive);
         }
 
 
