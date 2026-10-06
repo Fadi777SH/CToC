@@ -17,6 +17,7 @@ using Windows.Storage.Compression;
 using WindowsInput;
 
 using Point = System.Windows.Point;
+using System.IO;
 namespace SMR.Server
 {
     public class UdpServer
@@ -26,16 +27,14 @@ namespace SMR.Server
         InputSimulator? inputsime;
         public Socket? Client;
         int PORT = 22;
-        private int ScreenX = SystemInformation.VirtualScreen.X;
-        private int ScreenY = SystemInformation.VirtualScreen.Y;
 
         public static event Action? PC2DisConnect;
         private bool ServerShotDown = false;
 
         int ScreenWidth = SystemInformation.VirtualScreen.Width;
         int ScreenHeight = SystemInformation.VirtualScreen.Height;
-        EndPoint PcEndPoint;
-        EndPoint ClientendPoint;
+
+        EndPoint ClientendPoint=new IPEndPoint(IPAddress.Any,22);
 
     
 
@@ -64,7 +63,7 @@ namespace SMR.Server
             
             ContinueSend = true;
             ContinueRecive = true;
-            PcEndPoint = new IPEndPoint(IPAddressOfPC1, PORT);
+
             ClientendPoint = new IPEndPoint(IPAddressOfPC2, PORT);
             
 
@@ -206,10 +205,15 @@ namespace SMR.Server
 
 
                         }
+                        catch (SocketException)
+                        {
+                            // Exist from the await line .
+
+                        }
                         catch (Exception ex)
                         {
-
-                            System.Windows.MessageBox.Show(ex.Message);
+                            
+                            System.Windows.MessageBox.Show(ex.Message+" ");
                         }
 
                     }
@@ -290,6 +294,11 @@ namespace SMR.Server
                                 }
                             }
 
+
+                        }
+                        catch (SocketException)
+                        {
+                            // Exist from the await line .
 
                         }
                         catch (Exception ex)
