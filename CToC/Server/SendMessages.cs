@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Windows.Input;
 
-namespace CToC
+namespace SMR
 {
     
     public enum MessageType

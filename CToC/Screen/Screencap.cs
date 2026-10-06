@@ -1,4 +1,4 @@
-﻿using CToC.Server;
+﻿using SMR.Server;
 using System.Drawing.Imaging;
 using System.IO;
 using System.IO.Compression;
@@ -10,7 +10,7 @@ using Windows.Graphics.Imaging;
 using Windows.Storage.Streams;
 
 
-namespace CToC.Screen
+namespace SMR.Screen
 {
 
     public class FrameCapture : IDisposable

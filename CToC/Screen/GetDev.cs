@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using Windows.Graphics.DirectX.Direct3D11;
 using WinRT;
 
-namespace CToC.Screen
+namespace SMR.Screen
 {
     static class CaptureInterop
     {

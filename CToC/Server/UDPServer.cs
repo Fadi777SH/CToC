@@ -1,5 +1,5 @@
-﻿using CToC.Mouse;
-using CToC.Screen;
+﻿using SMR.Mouse;
+using SMR.Screen;
 using K4os.Compression.LZ4;
 using Microsoft.Graphics.Canvas;
 using Mono.CSharp;
@@ -16,7 +16,7 @@ using Windows.Media.Core;
 using Windows.Storage.Compression;
 using WindowsInput;
 using Point = System.Windows.Point;
-namespace CToC.Server
+namespace SMR.Server
 {
     public class UdpServer
     {
@@ -254,7 +254,7 @@ namespace CToC.Server
                             if (MSG.MouseSide == System.Windows.Input.MouseButton.Left)
                             {
                                 inputsime.Mouse.LeftButtonDown();
-                                Debug.WriteLine("down");
+                              
                             }
                             if (MSG.MouseSide == System.Windows.Input.MouseButton.Right)
                             {
@@ -271,7 +271,7 @@ namespace CToC.Server
                             if (MSG.MouseSide == System.Windows.Input.MouseButton.Left)
                             {
                                 inputsime.Mouse.LeftButtonUp();
-                                Debug.WriteLine("up");
+              
                             }
                             if (MSG.MouseSide == System.Windows.Input.MouseButton.Right)
                             {

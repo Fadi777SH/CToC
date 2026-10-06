@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace CToC.Mouse
+namespace SMR.Mouse
 {
     public class MousePosition
     {

@@ -9,7 +9,12 @@
     <UseWindowsForms>True</UseWindowsForms>
 	<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 	  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+	  <ApplicationIcon>icons8-remote-50.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="icons8-remote-50.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="BinaryFormatter" Version="3.0.0" />
@@ -27,6 +32,10 @@
     <PackageReference Include="SharpDX.DXGI" Version="4.2.0" />
     <PackageReference Include="System.ServiceModel.Primitives" Version="10.0.652802" />
    
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Keyboard\" />
   </ItemGroup>
 
 </Project>

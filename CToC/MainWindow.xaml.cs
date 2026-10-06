@@ -1,4 +1,4 @@
-﻿using CToC.Server;
+﻿using SMR.Server;
 using K4os.Compression.LZ4;
 using System.Diagnostics;
 using System.IO;
@@ -16,7 +16,7 @@ using System.Windows.Media.Imaging;
 using Windows.System;
 using Point = System.Windows.Point;
 
-namespace CToC
+namespace SMR
 {
 
 
@@ -211,6 +211,7 @@ namespace CToC
 
                         
                         btn.IsChecked = false;
+                        _AsSender = false;
                     }
                 }
                 else if(btn != null && btn.IsChecked == false)
@@ -318,6 +319,12 @@ namespace CToC
         {
             if (_AsSender)
                 MousePressEvent?.Invoke(e.ChangedButton, e.ButtonState);
+            var r = e.ClickCount;
+            if (r ==0)
+            {
+
+            }
+
 
         }
 
