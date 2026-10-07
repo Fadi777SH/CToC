@@ -442,6 +442,8 @@ namespace SMR.Server
                     var W = frame.Surface.Description.Width;
                     var H = frame.Surface.Description.Height;
                     var bytes = LZ4Compression(frame.Surface);
+                    var Ws = SystemInformation.VirtualScreen.Width;
+                    FrameArrived?.Invoke(bytes, W, H);
                     SentFrameToPC2bytes?.Invoke(bytes, W, H);
 
                 }
@@ -460,8 +462,7 @@ namespace SMR.Server
             byte[] raw =_renderTargetBitmap.GetPixelBytes();
             var compressed = new byte[LZ4Codec.MaximumOutputSize(raw.Length)];
             int size = LZ4Codec.Encode(raw, 0, raw.Length, compressed, 0, compressed.Length,LZ4Level.L00_FAST);
-            
-            FrameArrived?.Invoke(compressed,1920,1080);
+       
 
             Array.Resize(ref compressed, size);
 
