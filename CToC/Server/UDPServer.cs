@@ -186,7 +186,7 @@ namespace SMR.Server
                             {
                                 if (MSG.ErrorMessageType == _UDPErrorMessageTypes.ClientExit)
                                     System.Windows.MessageBox.Show("there been an exist or a disconnect from the client side ");
-                                break;
+                                
                             }
 
 
@@ -443,7 +443,7 @@ namespace SMR.Server
                     var H = frame.Surface.Description.Height;
                     var bytes = LZ4Compression(frame.Surface);
                     var Ws = SystemInformation.VirtualScreen.Width;
-                    FrameArrived?.Invoke(bytes, W, H);
+                   // FrameArrived?.Invoke(bytes, W, H);
                     SentFrameToPC2bytes?.Invoke(bytes, W, H);
 
                 }
@@ -470,7 +470,7 @@ namespace SMR.Server
         }
 
         #endregion
-        #region ConnectionRagion
+        #region ConnectionRegion
         UDPMessage MSG = new();
         public async Task disconnectClient()
         {
@@ -512,6 +512,7 @@ namespace SMR.Server
             MainWindow.KeyPressEvent -= PressThisKey;
             MainWindow.MouseChange -= MouseChangepos;
             MainWindow.MousePressEvent -= MousePressedDown;
+            MainWindow.MouseWheelevent -= MainWindow_MouseWheelevent;
         }
         #endregion
         #region SendEventsRegion
