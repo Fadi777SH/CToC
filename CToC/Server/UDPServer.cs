@@ -443,7 +443,7 @@ namespace SMR.Server
                     var H = frame.Surface.Description.Height;
                     var bytes = LZ4Compression(frame.Surface);
                     var Ws = SystemInformation.VirtualScreen.Width;
-                   // FrameArrived?.Invoke(bytes, W, H);
+                  //  FrameArrived?.Invoke(bytes, W, H);
                     SentFrameToPC2bytes?.Invoke(bytes, W, H);
 
                 }

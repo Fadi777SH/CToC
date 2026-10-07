@@ -42,7 +42,7 @@
     </Window.Resources>
 
     <Grid>
-        <Grid Height="500" Margin="0,42,0,42">
+        <Grid Height="600" >
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="0.1*"/>
                 <ColumnDefinition Name="PC2Grid" Width="0.8*" Focusable="True"/>
@@ -58,7 +58,7 @@
                     MouseWheel="PC2Fram_MouseWheel"
                     Focusable="True"
                     Background="#FF430505"  >
-                <Image Name="Frames" Stretch="Uniform" />
+                <Image Name="Frames" Stretch="UniformToFill" />
             </Border>
 
 

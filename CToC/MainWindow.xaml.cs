@@ -117,19 +117,7 @@ namespace SMR
             }
         }
 
-        public static ImageSource ConvertToImageSource2(byte[] bytes)
-        {
-            int w =1920;
-            int h = 1080;
 
-
-            WriteableBitmap wb = new WriteableBitmap(w, h, 96, 96,PixelFormats.Rgb48, null);
-
-            wb.WritePixels(new Int32Rect(0, 0, w, h), bytes, w * 4, 0);
-           
-            return  wb;
-
-        }
 
         #endregion
 
