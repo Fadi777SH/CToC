@@ -2,22 +2,16 @@
 using SMR.Screen;
 using K4os.Compression.LZ4;
 using Microsoft.Graphics.Canvas;
-using Mono.CSharp;
-using SharpDX.DXGI;
-using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
-using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
 using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX.Direct3D11;
-using Windows.Media.Core;
-using Windows.Storage.Compression;
 using WindowsInput;
 
 using Point = System.Windows.Point;
-using System.IO;
+using System.Diagnostics;
 namespace SMR.Server
 {
     public class UdpServer
@@ -53,7 +47,6 @@ namespace SMR.Server
         private bool ContinueRecive = true;
         private const int _SingleFrameChunk = 64000;
 
-    
         public async Task Sender(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
         {
             if (Accept?.Connected == true) return;
@@ -70,14 +63,7 @@ namespace SMR.Server
             //new
             await Accept.ConnectAsync(ClientendPoint);
 
-
-
-
-
             StartSendHooks();
-
-           
-
 
             KeepReciveFromRemote += StartReciveFromRemote;
 
@@ -86,34 +72,35 @@ namespace SMR.Server
 
         private async void StartSendHooks()
         {
-            new Thread(async delegate ()
+
+            try
             {
-                try
+                if (ContinueSend)
                 {
-                    if (ContinueSend)
-                    {
-                        MainWindow.KeyPressEvent += PressThisKey;
-                        MainWindow.MouseChange += MouseChangepos;
-                        MainWindow.MousePressEvent += MousePressedDown;
-                        MainWindow.MouseWheelevent += MainWindow_MouseWheelevent;
-
-                    }
+                    MainWindow.KeyPressEvent += PressThisKey;
+                    MainWindow.MouseChange += MouseChangepos;
+                    MainWindow.MousePressEvent += MousePressedDown;
+                    MainWindow.MouseWheelevent += MainWindow_MouseWheelevent;
 
                 }
-                catch (Exception ex)
-                {
 
-                    System.Windows.MessageBox.Show(ex.Message);
+            }
+            catch (Exception ex)
+            {
 
-                    PC2DisConnect?.Invoke();
+                System.Windows.MessageBox.Show(ex.Message);
 
-                }
-            }).Start();
+                PC2DisConnect?.Invoke();
+
+            }
+
         }
 
         private  void StartRecieveFromHooksUser(bool State)
         {
             inputsime = new();
+          
+            
             if (ContinueRecive&&Client!=null)
             
                 new Task(async () =>
@@ -139,7 +126,7 @@ namespace SMR.Server
                             if (MSG.type == MessageType.Keyboard)
                             {
                                 int vk = KeyInterop.VirtualKeyFromKey(MSG.key);
-                                var key = (WindowsInput.Native.VirtualKeyCode)vk;
+                                var key = (WindowsInput.VirtualKeyCode)vk;
                                 if (MSG.IsKeyDown)
                                     inputsime.Keyboard.KeyDown(key);
                                 else
@@ -174,7 +161,7 @@ namespace SMR.Server
                                     }
                                     if (MSG.MouseSide == System.Windows.Input.MouseButton.Middle)
                                     {
-
+                                        inputsime.Mouse.MiddleButtonDown();
                                     }
                                 }
 
@@ -191,7 +178,7 @@ namespace SMR.Server
                                     }
                                     if (MSG.MouseSide == System.Windows.Input.MouseButton.Middle)
                                     {
-
+                                        inputsime.Mouse.MiddleButtonUp();
                                     }
                                 }
                             }
@@ -325,7 +312,7 @@ namespace SMR.Server
 
             ContinueSend = true;
             ContinueRecive = true;
-
+            
             frameCapture.Stream();
 
             if (ContinueSend)
@@ -436,7 +423,8 @@ namespace SMR.Server
                 
             }
 
-          
+
+       
 
         }
 
@@ -466,18 +454,17 @@ namespace SMR.Server
 
         private static byte[] LZ4Compression(IDirect3DSurface surface)
         {
-
+         
             var _renderTargetBitmap = CanvasRenderTarget.CreateFromDirect3D11Surface(_canvasDevice, surface);
-            
-            
+      
             byte[] raw =_renderTargetBitmap.GetPixelBytes();
             var compressed = new byte[LZ4Codec.MaximumOutputSize(raw.Length)];
             int size = LZ4Codec.Encode(raw, 0, raw.Length, compressed, 0, compressed.Length,LZ4Level.L00_FAST);
+            
+            FrameArrived?.Invoke(compressed,1920,1080);
 
             Array.Resize(ref compressed, size);
 
-
-            
             return compressed;
         }
 
@@ -579,7 +566,7 @@ namespace SMR.Server
           
             byte[] bytes = getBytesOfUDPMessage(MSG);
 
-
+  
             if (Accept != null && ServerShotDown == false)
             {
                 await Accept.SendToAsync(bytes, ClientendPoint);
@@ -592,7 +579,7 @@ namespace SMR.Server
 
             MSG.type = MessageType.MouseWheelChange;
             MSG.MouseWheelDelta = delta;
-
+            
             byte[] bytes = getBytesOfUDPMessage(MSG);
 
 

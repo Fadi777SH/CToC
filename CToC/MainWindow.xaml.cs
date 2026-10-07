@@ -305,7 +305,7 @@ namespace SMR
 
         private void PC2Fram_MouseDown(object sender, MouseButtonEventArgs e)
         {
-
+            
             MousePressEvent?.Invoke(e.ChangedButton, e.ButtonState);
             var r = e.ClickCount;
 
