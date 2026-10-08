@@ -75,8 +75,8 @@
             <TextBlock Foreground="White" Grid.Column="0" Height="20" Focusable="False" Margin="0,25,0,180" HorizontalAlignment="Center" Text="Second PC IP" FontFamily="Ebrima" />
             <TextBlock Foreground="White" Grid.Column="2" Height="20" Focusable="False" Margin="0,25,0,180" HorizontalAlignment="Center" Text="Second PC IP" FontFamily="Ebrima" />
 
-            <TextBox   Grid.Column="2" Name="IPofRemote" Height="20" Width="100" Margin="0,25,0,140" HorizontalAlignment="Center" Text="192.168.100.74" FontFamily="Ebrima" TextChanged="IPofRemote_TextChanged" />
-            <TextBox   Grid.Column="0" Name="IPOfWantedDevice" Height="20" Width="100"   Margin="0,25,0,140" HorizontalAlignment="Center" Text="192.168.100.74" FontFamily="Ebrima" TextChanged="IPOfWantedDevice_TextChanged"  />
+            <TextBox   Grid.Column="2" Name="IPofRemote" Height="20" Width="100" Margin="0,25,0,140" HorizontalAlignment="Center" Text="0.0.0.0" FontFamily="Ebrima" TextChanged="IPofRemote_TextChanged" />
+            <TextBox   Grid.Column="0" Name="IPOfWantedDevice" Height="20" Width="100"   Margin="0,25,0,140" HorizontalAlignment="Center" Text="0.0.0.0" FontFamily="Ebrima" TextChanged="IPOfWantedDevice_TextChanged"  />
 
             <TextBlock Foreground="White" Focusable="False" 
                        VerticalAlignment="Top"
