@@ -1,13 +1,9 @@
 ﻿using SMR.Server;
-using System.Drawing.Imaging;
-using System.IO;
-using System.IO.Compression;
 using Windows.Graphics;
 using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX;
 using Windows.Graphics.DirectX.Direct3D11;
-using Windows.Graphics.Imaging;
-using Windows.Storage.Streams;
+using Windows.Media.Core;
 
 
 namespace SMR.Screen
@@ -77,8 +73,9 @@ namespace SMR.Screen
 
                     _direct3D11CaptureFramePool = Direct3D11CaptureFramePool.CreateFreeThreaded(dev, Format, 1, new(ScreenWidth, ScreenHeight));
 
-
                     _direct3D11CaptureFramePool.FrameArrived += UdpServer._direct3D11CaptureFramePool_FrameArrived;
+
+
                     _graphicsCaptureSession = _direct3D11CaptureFramePool.CreateCaptureSession(_captureItem);
                     _graphicsCaptureSession.StartCapture();
                 }

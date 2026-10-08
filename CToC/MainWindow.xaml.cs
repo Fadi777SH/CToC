@@ -65,7 +65,7 @@ namespace SMR
 
         }
         #region FrameDisplay
-        private WriteableBitmap _wb;
+        public WriteableBitmap _wb;
        
         private async void DisplayFrame(byte[] bytes,int Width,int Height)
         {
@@ -74,21 +74,22 @@ namespace SMR
 
                 var decompressbyte = new byte[Width * Height *4];
                 var delta = LZ4Codec.Decode(bytes,0,bytes.Length,decompressbyte,0,decompressbyte.Length);
-              
+
+
                 this.Dispatcher.Invoke(() => {
-                    
 
                     if (_wb == null)
                     {
                         _wb = new WriteableBitmap(Width, Height, 96, 96, PixelFormats.Bgr32, null);
 
-                        this.Frames.Source = _wb;
+                         this.Frames.Source = _wb;
                     }
 
                     _wb.WritePixels(new Int32Rect(0, 0, Width, Height), decompressbyte, Width * 4, 0);
-                
+
 
                 });
+
             }
             catch(Exception ex)
             {
@@ -98,26 +99,6 @@ namespace SMR
 
         }
  
-        public static BitmapImage ConvertToImageSource(byte[] bytes)
-        {
-            using (var ms = new MemoryStream(bytes))
-            {
-               
-                ms.Position = 0;
-               
-                var bitmapImage = new BitmapImage();
-                
-                bitmapImage.BeginInit();
-                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                bitmapImage.StreamSource = ms;
-                bitmapImage.EndInit();
-                bitmapImage.Freeze(); 
-
-                return bitmapImage;
-            }
-        }
-
-
 
         #endregion
 
@@ -295,7 +276,7 @@ namespace SMR
         {
             
             MousePressEvent?.Invoke(e.ChangedButton, e.ButtonState);
-            var r = e.ClickCount;
+        
 
         }
 

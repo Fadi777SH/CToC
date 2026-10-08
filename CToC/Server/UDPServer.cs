@@ -1,17 +1,23 @@
-﻿using SMR.Mouse;
-using SMR.Screen;
+﻿using ABI.Windows.Graphics.DirectX.Direct3D11;
 using K4os.Compression.LZ4;
 using Microsoft.Graphics.Canvas;
+using SharpDX.Direct3D11;
+using SMR.Mouse;
+using SMR.Screen;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Windows.Input;
+using Vortice.Direct3D11;
 using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX.Direct3D11;
+using Windows.Graphics.Imaging;
+using Windows.Media.Core;
 using WindowsInput;
-
 using Point = System.Windows.Point;
-using System.Diagnostics;
+
 namespace SMR.Server
 {
     public class UdpServer
@@ -136,7 +142,8 @@ namespace SMR.Server
 
                             else if (MSG.type == MessageType.MouseWheelChange)
                             {
-                                inputsime.Mouse.VerticalScroll(MSG.MouseWheelDelta);
+                                int Clicks = MSG.MouseWheelDelta / 120;
+                                inputsime.Mouse.VerticalScroll(Clicks);
                             }
 
 
@@ -422,17 +429,21 @@ namespace SMR.Server
                 Client?.SendToAsync(UDPMSG, ClientendPoint);
                 
             }
-
-
-       
+ 
+            Debug.WriteLine($"{stopwatch.ElapsedMilliseconds} :: {1000 / stopwatch.ElapsedMilliseconds}");
+            stopwatch.Reset();
+            stopwatch.Reset();
 
         }
 
         private static  CanvasDevice _canvasDevice => CanvasDevice.CreateFromDirect3D11Device(FrameCapture.dev);
 
+        static Stopwatch stopwatch = new();
+        int countnation = 0;
         public static async void _direct3D11CaptureFramePool_FrameArrived(Direct3D11CaptureFramePool sender, object args)
         {
-   
+
+            stopwatch.Start();
             try
             {
                 using var frame = sender.TryGetNextFrame();
@@ -441,9 +452,9 @@ namespace SMR.Server
                 {
                     var W = frame.Surface.Description.Width;
                     var H = frame.Surface.Description.Height;
+                   
                     var bytes = LZ4Compression(frame.Surface);
-                    var Ws = SystemInformation.VirtualScreen.Width;
-                  //  FrameArrived?.Invoke(bytes, W, H);
+                    FrameArrived?.Invoke(bytes, W, H);
                     SentFrameToPC2bytes?.Invoke(bytes, W, H);
 
                 }
@@ -456,15 +467,18 @@ namespace SMR.Server
 
         private static byte[] LZ4Compression(IDirect3DSurface surface)
         {
-         
+            
+          
             var _renderTargetBitmap = CanvasRenderTarget.CreateFromDirect3D11Surface(_canvasDevice, surface);
-      
-            byte[] raw =_renderTargetBitmap.GetPixelBytes();
+
+            byte[] raw =  _renderTargetBitmap.GetPixelBytes();
             var compressed = new byte[LZ4Codec.MaximumOutputSize(raw.Length)];
             int size = LZ4Codec.Encode(raw, 0, raw.Length, compressed, 0, compressed.Length,LZ4Level.L00_FAST);
-       
+            
 
             Array.Resize(ref compressed, size);
+
+           
 
             return compressed;
         }
@@ -503,9 +517,10 @@ namespace SMR.Server
                 ContinueRecive = false;
 
                 MSG = new UDPMessage() { ErrorMessageType = _UDPErrorMessageTypes.ClientExit, type = MessageType.Error };
-
                 var bytes = getBytesOfUDPMessage(MSG);
                 await Accept.SendToAsync(bytes, ClientendPoint);
+
+
                 KeepReciveFromRemote -= StartReciveFromRemote;
                 Accept.Close();
             }

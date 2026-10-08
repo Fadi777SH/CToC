@@ -58,7 +58,7 @@
                     MouseWheel="PC2Fram_MouseWheel"
                     Focusable="True"
                     Background="#FF430505"  >
-                <Image Name="Frames" Stretch="UniformToFill" />
+                <Image Name="Frames" Stretch="UniformToFill" Source="{Binding _wb}" />
             </Border>
 
 

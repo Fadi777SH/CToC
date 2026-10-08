@@ -13,6 +13,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Keyboard\**" />
+    <Content Remove="Keyboard\**" />
+    <EmbeddedResource Remove="Keyboard\**" />
+    <None Remove="Keyboard\**" />
+    <Page Remove="Keyboard\**" />
+    <PRIResource Remove="Keyboard\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="icons8-remote-50.ico" />
   </ItemGroup>
 
@@ -29,11 +38,9 @@
     <PackageReference Include="SharpDX.Direct3D11" Version="4.2.0" />
     <PackageReference Include="SharpDX.DXGI" Version="4.2.0" />
     <PackageReference Include="System.ServiceModel.Primitives" Version="10.0.652802" />
+    <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
+    <PackageReference Include="Vortice.DirectX" Version="3.8.3" />
    
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Keyboard\" />
   </ItemGroup>
 
 </Project>
