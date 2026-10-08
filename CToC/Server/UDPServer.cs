@@ -207,7 +207,7 @@ namespace SMR.Server
                         catch (Exception ex)
                         {
                             
-                            System.Windows.MessageBox.Show(ex.Message+" ");
+                            System.Windows.MessageBox.Show(ex.Message);
                         }
 
                     }
@@ -454,7 +454,7 @@ namespace SMR.Server
                     var H = frame.Surface.Description.Height;
                    
                     var bytes = LZ4Compression(frame.Surface);
-                    FrameArrived?.Invoke(bytes, W, H);
+                  //  FrameArrived?.Invoke(bytes, W, H);
                     SentFrameToPC2bytes?.Invoke(bytes, W, H);
 
                 }

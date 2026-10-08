@@ -65,7 +65,7 @@ namespace SMR
 
         }
         #region FrameDisplay
-        public WriteableBitmap _wb;
+        private WriteableBitmap _wb;
        
         private async void DisplayFrame(byte[] bytes,int Width,int Height)
         {
