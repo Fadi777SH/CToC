@@ -5,6 +5,7 @@ using SharpDX.Direct3D11;
 using SMR.Mouse;
 using SMR.Screen;
 using System.Diagnostics;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -26,7 +27,7 @@ namespace SMR.Server
         public Socket? Accept;
         InputSimulator? inputsime;
         public Socket? Client;
-        int PORT = 22;
+        int PORT = 3800;
 
         public static event Action? PC2DisConnect;
         private bool ServerShotDown = false;
@@ -34,7 +35,7 @@ namespace SMR.Server
         int ScreenWidth = SystemInformation.VirtualScreen.Width;
         int ScreenHeight = SystemInformation.VirtualScreen.Height;
 
-        EndPoint ClientendPoint=new IPEndPoint(IPAddress.Any,22);
+        EndPoint ClientendPoint=new IPEndPoint(IPAddress.Any,3800);
 
     
 
@@ -68,6 +69,7 @@ namespace SMR.Server
 
             //new
             await Accept.ConnectAsync(ClientendPoint);
+            
 
             StartSendHooks();
 
@@ -122,11 +124,11 @@ namespace SMR.Server
                         {
 
 
-                            var size = await Client.ReceiveFromAsync(RecievedByte, ClientendPoint);
+                            //var size = await Client.ReceiveFromAsync(RecievedByte, ClientendPoint);
 
+                            var size = await Client.ReceiveAsync(RecievedByte);
 
-
-                            Array.Resize(ref RecievedByte, size.ReceivedBytes);
+                            Array.Resize(ref RecievedByte, size);
 
                             UDPMessage MSG = FromByteArrayToUDPMessage(RecievedByte);
                             if (MSG.type == MessageType.Keyboard)
@@ -219,12 +221,13 @@ namespace SMR.Server
             if(state==true&&Accept!=null)
             new Task(async () =>
             {
-                System.Collections.Generic.IEnumerable<byte> Concate = new byte[0];
 
+                MemoryStream Concate = new();
                 int currentfingerprint = 0;
-
+                int _singleFrameChunkConst = 64000;
                 int lastframe = 0;
                 bool concatefirst = false;
+
                 while (ContinueRecive)
                 {
                     var buf = new byte[650000];
@@ -233,8 +236,9 @@ namespace SMR.Server
                     {
                         try
                         {
-                            var size = await Accept.ReceiveFromAsync(buf, ClientendPoint);
-                            Array.Resize(ref buf, size.ReceivedBytes);
+                           // var size = await Accept.ReceiveFromAsync(buf, ClientendPoint);
+                            var size = await Accept.ReceiveAsync(buf);
+                            Array.Resize(ref buf, size);
 
                             var UDPMSG = FromByteArrayToUDPFrameMessage(buf);
                             if (UDPMSG.type == MessageType.Error)
@@ -249,9 +253,7 @@ namespace SMR.Server
                             {
                                 currentfingerprint = UDPMSG.FrameFingerPrint;
 
-                                Concate = new byte[0];
-                                Concate = Concate.Concat(UDPMSG.ChunkByteArray);
-
+                                Concate = new();
                                 concatefirst = false;
 
                                 lastframe = UDPMSG.CurrentChunkNumber;
@@ -259,22 +261,27 @@ namespace SMR.Server
                             }
                             if (currentfingerprint == UDPMSG.FrameFingerPrint)
                             {
-                                if (UDPMSG.CurrentChunkNumber == 1) concatefirst = true;
+                                if (UDPMSG.CurrentChunkNumber == 1)
+                                {
+                                    concatefirst = true;
+                                    Concate.Write(UDPMSG.ChunkByteArray,0,_singleFrameChunkConst);
+       
+                                }
                                 if (concatefirst == true && lastframe == UDPMSG.CurrentChunkNumber - 1)
                                 {
                                     if (UDPMSG.CurrentChunkNumber < UDPMSG.totalChunks)
                                     {
-                                        Concate = Concate.Concat(UDPMSG.ChunkByteArray);
+                                        Concate.Write(UDPMSG.ChunkByteArray, 0, _singleFrameChunkConst);
                                     }
 
                                     //last chunk
                                     if (UDPMSG.CurrentChunkNumber == UDPMSG.totalChunks)
                                     {
                                         Array.Resize(ref UDPMSG.ChunkByteArray, UDPMSG.ShouldResizeTo);
+                                        
+                                        Concate.Write(UDPMSG.ChunkByteArray, 0, UDPMSG.ChunkByteArray.Length);
 
-                                        Concate = Concate.Concat(UDPMSG.ChunkByteArray);
-
-
+                                        var w = Concate.ToArray().Length;
                                         if (UDPMSG.TotalSizeOfTheFrame == Concate.ToArray().Length)
                                         {
 
@@ -426,7 +433,7 @@ namespace SMR.Server
                 var UDPMSG = getBytesOfUDPMessage(MSG);
                 
 
-                Client?.SendToAsync(UDPMSG, ClientendPoint);
+                Client?.SendAsync(UDPMSG);
                 
             }
  
@@ -550,7 +557,7 @@ namespace SMR.Server
 
             byte[] bytes = getBytesOfUDPMessage(MSG);
             if (Accept != null && ServerShotDown == false)
-                await Accept.SendToAsync(bytes, ClientendPoint);
+                await Accept.SendAsync(bytes);
         }
         public async void MouseChangepos(System.Windows.Point portion)
         {
@@ -566,7 +573,7 @@ namespace SMR.Server
             byte[] bytes = getBytesOfUDPMessage(MSG);
             if (Accept != null && ServerShotDown == false)
             {
-                await Accept.SendToAsync(bytes, ClientendPoint);
+                await Accept.SendAsync(bytes);
 
             }
 
@@ -586,7 +593,7 @@ namespace SMR.Server
   
             if (Accept != null && ServerShotDown == false)
             {
-                await Accept.SendToAsync(bytes, ClientendPoint);
+                await Accept.SendAsync(bytes);
             }
         }
         private async void MainWindow_MouseWheelevent(int delta)
@@ -602,7 +609,7 @@ namespace SMR.Server
 
             if (Accept != null && ServerShotDown == false)
             {
-                await Accept.SendToAsync(bytes, ClientendPoint);
+                await Accept.SendAsync(bytes);
             }
         }
         #endregion
