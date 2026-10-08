@@ -69,8 +69,11 @@ namespace SMR.Server
 
             //new
             await Accept.ConnectAsync(ClientendPoint);
-            
 
+            if (Accept.Connected == false)
+            {
+                System.Windows.MessageBox.Show("You are not connected to the IP address you picked \n please disconnect and reconnect");
+            }
             StartSendHooks();
 
             KeepReciveFromRemote += StartReciveFromRemote;
@@ -326,9 +329,12 @@ namespace SMR.Server
 
             ContinueSend = true;
             ContinueRecive = true;
-            
+            await Client.ConnectAsync(ClientendPoint);
             frameCapture.Stream();
-
+            if (Client.Connected == false)
+            {
+                System.Windows.MessageBox.Show("You are not connected to the IP address you picked");
+            }
             if (ContinueSend)
             {
                 SentFrameToPC2bytes += UdpServer_SentFrameToPC2bytes;
