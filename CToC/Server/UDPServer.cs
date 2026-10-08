@@ -39,13 +39,13 @@ namespace SMR.Server
         public static event SentFrameToPC2Handlerbit? SentFrameToPC2bytes;
 
         public delegate void ProcessRecieve(bool KeepRecieve);
-        public static event ProcessRecieve? KeepRecieveFromUser;
+        public static event ProcessRecieve? KeepReceiveFromUser;
 
-        public static event ProcessRecieve? KeepReciveFromRemote;
+        public static event ProcessRecieve? KeepReceiveFromRemote;
         public FrameCapture frameCapture = new();
         #endregion
         private bool ContinueSend = true;
-        private bool ContinueRecive = true;
+        private bool ContinueReceive = true;
         private const int _SingleFrameChunk = 64000;
 
         public async Task Sender(IPAddress IPAddressOfPC1, IPAddress IPAddressOfPC2)
@@ -56,7 +56,7 @@ namespace SMR.Server
             Accept.Bind(new IPEndPoint(IPAddressOfPC1, PORT));
 
             ContinueSend = true;
-            ContinueRecive = true;
+            ContinueReceive = true;
 
             ClientendPoint = new IPEndPoint(IPAddressOfPC2, PORT);
 
@@ -70,9 +70,9 @@ namespace SMR.Server
             }
             StartSendHooks();
 
-            KeepReciveFromRemote += StartReciveFromRemote;
+            KeepReceiveFromRemote += StartReceiveFromRemote;
 
-            KeepReciveFromRemote?.Invoke(ContinueRecive);
+            KeepReceiveFromRemote?.Invoke(ContinueReceive);
         }
 
         private async void StartSendHooks()
@@ -101,17 +101,17 @@ namespace SMR.Server
 
         }
 
-        private void StartRecieveFromHooksUser(bool State)
+        private void StartReceiveFromHooksUser(bool State)
         {
             inputsime = new();
 
 
-            if (ContinueRecive && Client != null)
+            if (ContinueReceive && Client != null)
 
                 new Task(async () =>
                 {
 
-                    while (ContinueRecive)
+                    while (ContinueReceive)
                     {
 
 
@@ -210,7 +210,7 @@ namespace SMR.Server
                 }).Start();
 
         }
-        private async void StartReciveFromRemote(bool state)
+        private async void StartReceiveFromRemote(bool state)
         {
             if (state == true && Accept != null)
                 new Task(async () =>
@@ -222,7 +222,7 @@ namespace SMR.Server
                     int lastframe = 0;
                     bool concatefirst = false;
 
-                    while (ContinueRecive)
+                    while (ContinueReceive)
                     {
                         var buf = new byte[650000];
 
@@ -319,7 +319,7 @@ namespace SMR.Server
             ClientendPoint = new IPEndPoint(IPAddressOfPC2, PORT);
 
             ContinueSend = true;
-            ContinueRecive = true;
+            ContinueReceive = true;
             await Client.ConnectAsync(ClientendPoint);
             frameCapture.Stream();
             if (Client.Connected == false)
@@ -332,9 +332,9 @@ namespace SMR.Server
             }
 
 
-            KeepRecieveFromUser += StartRecieveFromHooksUser;
+            KeepReceiveFromUser += StartReceiveFromHooksUser;
 
-            KeepRecieveFromUser?.Invoke(ContinueRecive);
+            KeepReceiveFromUser?.Invoke(ContinueReceive);
         }
 
 
@@ -495,9 +495,9 @@ namespace SMR.Server
             if (Client != null && frameCapture.IsStreaming == false)
             {
                 SentFrameToPC2bytes -= UdpServer_SentFrameToPC2bytes;
-                KeepRecieveFromUser -= StartRecieveFromHooksUser;
+                KeepReceiveFromUser -= StartReceiveFromHooksUser;
 
-                ContinueRecive = false;
+                ContinueReceive = false;
                 ContinueSend = false;
                 var MSG = new UDPframeMessage() { ErrorMessageType = _UDPErrorMessageTypes.ClientExit, type = MessageType.Error };
 
@@ -516,14 +516,14 @@ namespace SMR.Server
             if (Accept != null)
             {
                 ContinueSend = false;
-                ContinueRecive = false;
+                ContinueReceive = false;
 
                 MSG = new UDPMessage() { ErrorMessageType = _UDPErrorMessageTypes.ClientExit, type = MessageType.Error };
                 var bytes = getBytesOfUDPMessage(MSG);
                 await Accept.SendAsync(bytes);
 
 
-                KeepReciveFromRemote -= StartReciveFromRemote;
+                KeepReceiveFromRemote -= StartReceiveFromRemote;
                 Accept.Close();
             }
             MainWindow.KeyPressEvent -= PressThisKey;
