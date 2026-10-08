@@ -3,7 +3,6 @@ using Windows.Graphics;
 using Windows.Graphics.Capture;
 using Windows.Graphics.DirectX;
 using Windows.Graphics.DirectX.Direct3D11;
-using Windows.Media.Core;
 
 
 namespace SMR.Screen
@@ -14,17 +13,17 @@ namespace SMR.Screen
         int ScreenWidth = SystemInformation.VirtualScreen.Width;
         int ScreenHeight = SystemInformation.VirtualScreen.Height;
 
-        private  GraphicsCaptureItem _captureItem;
-        public   GraphicsCaptureSession _graphicsCaptureSession;
+        private GraphicsCaptureItem _captureItem;
+        public GraphicsCaptureSession _graphicsCaptureSession;
 
-        public   Direct3D11CaptureFramePool _direct3D11CaptureFramePool;
+        public Direct3D11CaptureFramePool _direct3D11CaptureFramePool;
         public delegate void FramArrivedHandler(Direct3D11CaptureFramePool Framepool, GraphicsCaptureSession graphics);
 
         public bool IsStreaming
         {
             get
             {
-               return StreamCurrentState;
+                return StreamCurrentState;
             }
         }
         private bool StreamCurrentState = false;
@@ -32,9 +31,9 @@ namespace SMR.Screen
         {
             if (_direct3D11CaptureFramePool != null)
                 _direct3D11CaptureFramePool.Dispose();
-            if(_graphicsCaptureSession!=null)
+            if (_graphicsCaptureSession != null)
                 _graphicsCaptureSession.Dispose();
-            if(dev!=null)
+            if (dev != null)
                 dev.Dispose();
 
             StreamCurrentState = false;
@@ -55,13 +54,13 @@ namespace SMR.Screen
         public static IDirect3DDevice dev;
         private DirectXPixelFormat Format = DirectXPixelFormat.B8G8R8A8UIntNormalized;
 
-     
+
 
         public void Stream()
         {
-            
-            
-            StreamCurrentState = true;
+
+
+            StreamCurrentState = !StreamCurrentState;
             if (StreamCurrentState == true)
             {
                 try

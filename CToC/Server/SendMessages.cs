@@ -1,10 +1,9 @@
 ﻿using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Windows.Input;
 
 namespace SMR
 {
-    
+
     public enum MessageType
     {
         Keyboard,
@@ -45,16 +44,16 @@ namespace SMR
         public _UDPErrorMessageTypes ErrorMessageType;
         public int totalChunks;
         public int FrameFingerPrint;
-        public  int CurrentChunkNumber;
+        public int CurrentChunkNumber;
         public int TotalSizeOfTheFrame;
         public int ShouldResizeTo;
 
-        [MarshalAs(UnmanagedType.ByValArray,SizeConst =64000)]
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 64000)]
         public byte[] ChunkByteArray;
         public int FrameWidth;
         public int FrameHeight;
-        
-        public UDPframeMessage(int tot,int current, byte[] framebyte,int resize,int randomfingerprint,int totalsizeoftheframe, int W, int H)
+
+        public UDPframeMessage(int tot, int current, byte[] framebyte, int resize, int randomfingerprint, int totalsizeoftheframe, int W, int H)
         {
 
             FrameHeight = H;
@@ -63,10 +62,10 @@ namespace SMR
             TotalSizeOfTheFrame = totalsizeoftheframe;
             totalChunks = tot;
             ShouldResizeTo = resize;
-            CurrentChunkNumber =current;
+            CurrentChunkNumber = current;
             ChunkByteArray = new byte[64000];
-            framebyte.CopyTo(ChunkByteArray,0);
-            
+            framebyte.CopyTo(ChunkByteArray, 0);
+
         }
 
     };

@@ -1,16 +1,10 @@
-﻿using SMR.Server;
-using K4os.Compression.LZ4;
-using System.Diagnostics;
-using System.IO;
+﻿using K4os.Compression.LZ4;
+using SMR.Server;
 using System.Net;
-using System.Runtime.Intrinsics.Arm;
-using System.Security.Cryptography;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-
 using System.Windows.Input;
-using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Windows.System;
@@ -20,16 +14,16 @@ namespace SMR
 {
 
 
-    public  partial class MainWindow :System.Windows.Window
+    public partial class MainWindow : System.Windows.Window
     {
         UdpServer Server = new();
         public delegate void MouseChangeHandler(System.Windows.Point point);
 
         public static event MouseChangeHandler? MouseChange;
 
-        public  DispatcherQueue _dispatcherQueue;
+        public DispatcherQueue _dispatcherQueue;
 
-        public delegate void KeyPressHandler(System.Windows.Input.Key key,bool e);
+        public delegate void KeyPressHandler(System.Windows.Input.Key key, bool e);
         public static event KeyPressHandler? KeyPressEvent;
         public delegate void MousePressHandler(System.Windows.Input.MouseButton mouseButton, MouseButtonState state);
         public static event MousePressHandler? MousePressEvent;
@@ -49,7 +43,7 @@ namespace SMR
 
             UdpServer.FrameArrived += DisplayFrame;
             UdpServer.PC2DisConnect += UdpServer_PC2DisConnect;
-            
+
         }
 
         private void UdpServer_PC2DisConnect()
@@ -66,23 +60,24 @@ namespace SMR
         }
         #region FrameDisplay
         private WriteableBitmap _wb;
-       
-        private async void DisplayFrame(byte[] bytes,int Width,int Height)
+
+        private async void DisplayFrame(byte[] bytes, int Width, int Height)
         {
             try
             {
 
-                var decompressbyte = new byte[Width * Height *4];
-                var delta = LZ4Codec.Decode(bytes,0,bytes.Length,decompressbyte,0,decompressbyte.Length);
+                var decompressbyte = new byte[Width * Height * 4];
+                var delta = LZ4Codec.Decode(bytes, 0, bytes.Length, decompressbyte, 0, decompressbyte.Length);
 
 
-                this.Dispatcher.Invoke(() => {
+                this.Dispatcher.Invoke(() =>
+                {
 
                     if (_wb == null)
                     {
                         _wb = new WriteableBitmap(Width, Height, 96, 96, PixelFormats.Bgr32, null);
 
-                         this.Frames.Source = _wb;
+                        this.Frames.Source = _wb;
                     }
 
                     _wb.WritePixels(new Int32Rect(0, 0, Width, Height), decompressbyte, Width * 4, 0);
@@ -91,14 +86,14 @@ namespace SMR
                 });
 
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 System.Windows.MessageBox.Show(ex.Message);
             }
 
 
         }
- 
+
 
         #endregion
 
@@ -149,15 +144,15 @@ namespace SMR
                 IPAddress ipofpc1 = IPAddress.Parse(_IPAddress);
                 IPAddress ipofpc2 = IPAddress.Parse(this.IPofRemote.Text);
 
-     
+
 
                 if (btn != null && btn.IsChecked == true)
                 {
                     if (PC1ToPC2.IsChecked == false && (ipofpc1.ToString() != ipofpc2.ToString()))
                     {
-                       Server?.Reciever(ipofpc1, ipofpc2);
-   
-                      
+                        Server?.Reciever(ipofpc1, ipofpc2);
+
+
                     }
                     else
                     {
@@ -172,7 +167,7 @@ namespace SMR
                         btn.IsChecked = false;
                     }
                 }
-                else if(btn != null && btn.IsChecked == false)
+                else if (btn != null && btn.IsChecked == false)
                 {
                     Server?.disconnectClient();
                     System.Windows.MessageBox.Show("you disconnect as a remote");
@@ -188,23 +183,23 @@ namespace SMR
 
         private void ConnectToWantedDeviceBtn(object sender, RoutedEventArgs e)
         {
-            
+
             var btn = sender as ToggleButton;
             try
             {
                 IPAddress ipofpc1 = IPAddress.Parse(_IPAddress);
                 IPAddress ipofpc2 = IPAddress.Parse(this.IPOfWantedDevice.Text);
-                
+
                 if (btn?.IsChecked == true)
                 {
-                    if (PC2ToPC1?.IsChecked == false&&(ipofpc1.ToString() != ipofpc2.ToString()))
+                    if (PC2ToPC1?.IsChecked == false && (ipofpc1.ToString() != ipofpc2.ToString()))
                     {
                         Server?.Sender(ipofpc1, ipofpc2);
-                      
+
                     }
                     else
                     {
-                        if(ipofpc1.ToString() == ipofpc2.ToString())
+                        if (ipofpc1.ToString() == ipofpc2.ToString())
                         {
                             System.Windows.MessageBox.Show("you can't connect to the same IP of your computer");
                         }
@@ -212,10 +207,10 @@ namespace SMR
                         {
                             System.Windows.MessageBox.Show("you can't be a reciver and a remote at the same time");
                         }
-                        
+
                         btn.IsChecked = false;
                     }
-  
+
                 }
                 else if (btn != null && btn.IsChecked == false)
                 {
@@ -230,14 +225,14 @@ namespace SMR
             }
         }
         #endregion
-  
+
         #region keyboard and mouse hooks
         private void PC2Fram_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
         {
 
-                Point portionInFram = PortionOfCursorInPC2Fram();
-                MouseChange?.Invoke(portionInFram);
-            
+            Point portionInFram = PortionOfCursorInPC2Fram();
+            MouseChange?.Invoke(portionInFram);
+
 
         }
 
@@ -274,9 +269,9 @@ namespace SMR
 
         private void PC2Fram_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            
+
             MousePressEvent?.Invoke(e.ChangedButton, e.ButtonState);
-        
+
 
         }
 

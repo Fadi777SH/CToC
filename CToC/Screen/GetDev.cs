@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using Windows.Graphics.DirectX.Direct3D11;
-using WinRT;
 
 namespace SMR.Screen
 {
