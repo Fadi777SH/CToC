@@ -26,7 +26,7 @@
     
 **How the Sockets behaves**
 1 -  one of the hardest part in which what is the fastest-low latency way to send and receive data from , I tried using TCP at 
-      first due that is it the most common , but finding out that UDP was more superior for my application made me switch the whole app to it instantly .
+      first due to the to the fact is it the most common , but finding out that UDP was more superior for my application made me switch the whole app to it instantly .
       
 2 - once the application runs , the socket generate a Udp server and send and receive data by it .
 3 - every move happen in the application via the acceptor get catch by the application and translate instantly to raw bytes and send via the socket
